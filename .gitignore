@@ -105,11 +105,5 @@ venv.bak/
 
 #mine
 /whole_corpus
-/whole_corpus2
-/docs
-/app/old
-/data2
 /data/corpus.csv
 /papers
-/app2
-/Reduce Corpus.ipynb
