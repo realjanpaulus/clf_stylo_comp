@@ -102,3 +102,9 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+#mine
+/whole_corpus
+/whole_corpus2
+/docs
+/app/old
