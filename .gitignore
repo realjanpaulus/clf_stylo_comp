@@ -108,3 +108,5 @@ venv.bak/
 /whole_corpus2
 /docs
 /app/old
+/data2
+/data/corpus.csv
