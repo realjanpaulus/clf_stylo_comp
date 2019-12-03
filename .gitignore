@@ -105,6 +105,7 @@ venv.bak/
 
 #mine
 /whole_corpus
-/data/corpora
+/data/corpus.csv
 /papers
 /german_fiction
+/app/temp.ipynb
