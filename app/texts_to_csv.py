@@ -6,11 +6,16 @@ import re
 
 from typing import Dict, List, Tuple
 import argparse
+import logging
 from pathlib import Path
 
-
-#TODO
-import time
+### texts_to_csv logging handler ###
+logging.basicConfig(level=logging.INFO, filename="../logs/texts_to_csv.log", filemode="w")
+console = logging.StreamHandler()
+console.setLevel(logging.INFO)
+formatter = logging.Formatter("%(levelname)s: %(message)s")
+console.setFormatter(formatter)
+logging.getLogger('').addHandler(console)
 
 
 def get_file_list(path: str) -> List[str]:
@@ -60,7 +65,6 @@ def get_metadata(filename: str, file: str) -> List:
         title = "no_title"
         
 
-
     factor = (len(author) + len(title) + 4)*3
     metalist = [author, title, year]
     
@@ -86,23 +90,16 @@ def texts_to_df(path: str) -> str:
     d = {}
     file_list = get_file_list(path)
 
-    #TODO
-    c = 0
-    
     # pare file_list and add meta data with text to dict
-    for filename in file_list:
-        #TODO
-        c += 1
-        print(f"file: {c} von {len(file_list)}")
+    for c, filename in enumerate(file_list):
+        logging.info(f"Text {c+1} von {len(file_list)}.")
 
         file_dir = path + "/" + filename + ".txt"
         with open(file_dir, encoding="utf-8") as f:
             tmp_file = f.read()
             d[filename] = get_metadata(filename, tmp_file)
 
-        
-        
-    
+
     # dict to dataframe
     df = pd.DataFrame.from_dict(d, orient="index").reset_index()
     df.columns = ["filename", "author", "title", 
@@ -110,12 +107,9 @@ def texts_to_df(path: str) -> str:
     return df
 
 def main():
-    #TODO
-    st = time.time()
 
     df = texts_to_df(args.path)
-    df.to_csv("../data/corpus.csv")
-    print(time.time() - st)
+    df.to_csv("../data/corpus.csv", index=False)
 
 if __name__ == "__main__":
     
