@@ -12,6 +12,7 @@ pandas = "*"
 matplotlib = "*"
 nltk = "*"
 re = "*"
+fast-bert = "*"
 
 [requires]
 python_version = "3.7"
