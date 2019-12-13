@@ -106,7 +106,7 @@ venv.bak/
 #mine
 .DS_Store
 /whole_corpus
-/data/
+#/data/
 /papers
 /german_fiction
 /app/temp.ipynb
