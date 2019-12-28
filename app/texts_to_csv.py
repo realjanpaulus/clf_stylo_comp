@@ -1,13 +1,16 @@
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-from nltk import word_tokenize
-import re
-
-from typing import Dict, List, Tuple
 import argparse
 import logging
+from nltk import word_tokenize
+import numpy as np
+import os
+import pandas as pd
 from pathlib import Path
+import re
+from typing import Dict, List, Tuple
+import urllib
+import xmltodict
+import zipfile
+
 
 ### texts_to_csv logging handler ###
 logging.basicConfig(level=logging.INFO, filename="../logs/texts_to_csv.log", filemode="w")
@@ -19,13 +22,18 @@ logging.getLogger('').addHandler(console)
 
 
 def get_file_list(path: str) -> List[str]:
-    return [x.stem for x in Path(path).glob("**/*.txt") if x.is_file()]
+    """ Returns a list with files of a given directory.
+    """
+    return [file.stem for file in Path(path).glob("**/*.txt") if file.is_file()]
 
 def hasNumbers(inputString: str) -> bool:
+    """ Checks if a string has numbers.
+    """
     return any(char.isdigit() for char in inputString)
 
 def get_metadata(filename: str, file: str) -> List:
-    
+    """ Splits a string into metadata informations.
+    """
     author = ""
     title = ""
     year = ""
@@ -33,7 +41,7 @@ def get_metadata(filename: str, file: str) -> List:
     filename_split = filename.split("-", 1)
     author = filename_split[0].replace("_", " ")[:-1]
     
-    #filename_elements = re.findall(r"\w+", "".join(filename_split[1]))
+    # filename_elements = re.findall(r"\w+", "".join(filename_split[1]))
     filename_elements = re.findall(r"\w+(?:-\w+)+|\w+", "".join(filename_split[1]))
     
     if len(filename_elements) > 2:
@@ -68,8 +76,8 @@ def get_metadata(filename: str, file: str) -> List:
     factor = (len(author) + len(title) + 4)*3
     metalist = [author, title, year]
     
-    #split txt-file in two parts by a factor and replace
-    #author-, title- and year-informations
+    # splits a txt-file into two parts by a factor and replaces informations 
+    # about the author, title and year 
     file_p1 = file[:factor]
     file_p2 = file[factor:]
     
@@ -85,8 +93,36 @@ def get_metadata(filename: str, file: str) -> List:
     text = " ".join(tok_text)
     return metalist + [textlength, text]
 
+def speeches_to_df(path: str, 
+                   zipfile: Optional[str] = "German-Political-Speeches-Corpus.zip",
+                   remote_dataset: Optional[str] = "Bundesregierung.xml") -> str:
+    """ INFO: The code was adopted in a modified form 
+        from the following website: https://www.timmer-net.de/2019/03/24/nlp_basics/
+    """
+    logging.info("Writing speeches to DataFrame.")
+    df = None
+
+    zip_path = os.path.join(path, zipfile)
+
+    with zipfile.ZipFile(zip_path) as file:
+        file.extract(remote_dataset, path=path)
+        
+    xml_path = os.path.join(path, remote_dataset)
+    with open(xml_path, mode="rb") as file:
+        xml_document = xmltodict.parse(file)
+        nodes = xml_document['collection']['text']
+        df = pd.DataFrame({'author' : [t['@person'] for t in nodes],
+                            'title' : [t['@titel'] for t in nodes],
+                            'text' : [t['rohtext'] for t in nodes]})
+
+    logging.info("Finished writing speeches to DataFrame.")
+    return df
 
 def texts_to_df(path: str) -> str:
+    """ Takes a path to a directory of text files and saves
+        the metadata and the corresponding text into a
+        DataFrame.
+    """
     d = {}
     file_list = get_file_list(path)
 
@@ -99,7 +135,6 @@ def texts_to_df(path: str) -> str:
             tmp_file = f.read()
             d[filename] = get_metadata(filename, tmp_file)
 
-
     # dict to dataframe
     df = pd.DataFrame.from_dict(d, orient="index").reset_index()
     df.columns = ["filename", "author", "title", 
@@ -107,14 +142,18 @@ def texts_to_df(path: str) -> str:
     return df
 
 def main():
-
-    df = texts_to_df(args.path)
-    df.to_csv("../data/corpus.csv", index=False)
+    if args.corpus_type == "prosa":
+        df = texts_to_df(args.path)
+        df.to_csv("../data/corpus.csv", index=False)
+    elif args.corpus_type == "speeches":
+        df = speeches_to_df(args.path)
+        df.to_csv("../data/ospeeches_corpus.csv", index=False)
 
 if __name__ == "__main__":
     
     parser = argparse.ArgumentParser(prog="texts_to_csv", description="Stores txt-files in a DataFrame.")
     parser.add_argument("path", type=str, help="Path to the txt-files directory.")
+    parser.add_argument("--corpus_type", "-ct", type=str, nargs="?", default="prosa", help="Indicates the corpus type. By default, it is 'prosa'. Other value is 'speeches'.")
     args = parser.parse_args()
 
     main()
