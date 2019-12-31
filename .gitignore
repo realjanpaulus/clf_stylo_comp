@@ -105,11 +105,9 @@ venv.bak/
 
 #mine
 .DS_Store
-/whole_corpus
-/whole_corpus2
-/whole_corpus3
+/prosa_corpus
+/speeches_corpus
 /data/corpora/
-/german_fiction
 /app/temp.ipynb
 /app/old/
 /app/delete_me/
