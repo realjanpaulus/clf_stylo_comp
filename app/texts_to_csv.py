@@ -144,10 +144,10 @@ def texts_to_df(path: str) -> str:
 def main():
     if args.corpus_type == "prosa":
         df = texts_to_df(args.path)
-        df.to_csv("../data/corpus.csv", index=False)
+        df.to_csv("../data/corpora/corpus.csv", index=False)
     elif args.corpus_type == "speeches":
         df = speeches_to_df(args.path)
-        df.to_csv("../data/ospeeches_corpus.csv", index=False)
+        df.to_csv("../data/corpora/ospeeches_corpus.csv", index=False)
 
 if __name__ == "__main__":
     
