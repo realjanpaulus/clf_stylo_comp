@@ -151,9 +151,9 @@ def main():
 
 	
 	if args.save_date:
-		csv_name = f"classification_{args.output_name} ({vectorization_method}) ({datetime.now():%d.%m.%y}_{datetime.now():%H:%M}).csv"
+		csv_name = f"classification_{args.output_name} ({vectorization_method}) ({datetime.now():%d.%m.%y}_{datetime.now():%H:%M})"
 	else:
-		csv_name = f"classification_{args.output_name} ({vectorization_method}).csv"
+		csv_name = f"classification_{args.output_name} ({vectorization_method})"
 	results.to_csv(f"../data/tables/{csv_name}.csv")
 
 	
@@ -165,10 +165,10 @@ def main():
 
 
 	if args.save_date:
-		figure_name = f"results_bar_{args.output_name} ({vectorization_method}) ({datetime.now():%d.%m.%y}_{datetime.now():%H:%M}).png"
+		figure_name = f"results_bar_{args.output_name} ({vectorization_method}) ({datetime.now():%d.%m.%y}_{datetime.now():%H:%M})"
 	else:
-		figure_name = f"results_bar_{args.output_name} ({vectorization_method}).png"
-	plt.savefig(f'../data/figures/results/{figure_name}', dpi=300, bbox_inches='tight')
+		figure_name = f"results_bar_{args.output_name} ({vectorization_method})"
+	plt.savefig(f'../data/figures/results/{figure_name}.png', dpi=300, bbox_inches='tight')
 
 	logging.info(f"Run-time: {int((time.time() - st)/60)} minute(s).")
 
