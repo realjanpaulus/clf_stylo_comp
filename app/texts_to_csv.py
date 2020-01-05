@@ -6,7 +6,7 @@ import os
 import pandas as pd
 from pathlib import Path
 import re
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 import urllib
 import xmltodict
 import zipfile
