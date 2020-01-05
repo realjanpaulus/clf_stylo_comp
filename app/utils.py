@@ -1,10 +1,35 @@
+from datetime import datetime
+import glob
 from nltk import word_tokenize
+import matplotlib.pyplot as plt
+plt.rcParams.update({'figure.figsize':(8,6), 
+					 'figure.dpi':300,
+					 'font.size': 8})
 import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from typing import Dict, List, Optional, Tuple, Union
+
+# ===================
+# Table of contents #
+# ===================
+
+# adjustable parameter 
+# preprocessing functions
+# experiment helper functions
+# visualization helper functions
+# analysis helper functions
+
+# ======================
+# adjustable parameter #
+# ======================
+
+fontsize_vertical = 4
+fontsize_horizontal = 6
+scaling_l_r = 0.01 # scaling factor for f1-scores on the bars of the classification histogram figures
+scaling_t_b = 0.04 # top-bottom: smaller = more downwards
 
 # =========================
 # preprocessing functions #
@@ -83,7 +108,7 @@ def split_texts_into_segments(corpus: pd.DataFrame,
 	
 	new_corpus = pd.DataFrame.from_dict(tmp_dict, orient="index").reset_index()
 	new_corpus.columns = ["filename", "author", "title", 
-				  		  "year", "textlength", "text"]
+						  "year", "textlength", "text"]
 	return new_corpus
 
 def unify_texts_amount(df: pd.DataFrame,
@@ -113,33 +138,201 @@ def unify_texts_amount(df: pd.DataFrame,
 # experiment helper functions #
 # =============================
 
-def document_term_matrix(corpus: pd.DataFrame, 
+def document_term_matrix(corpus: pd.DataFrame,
+						 vectorization_method: str, 
 						 document_column: str,
 						 lower: Optional[str] = True,
 						 max_features: Optional[int] = 2000,
 						 ngram_range: Optional[Tuple[int, int]] = (1,1),
 						 sparse: Optional[bool] = False,
-						 text_column: Optional[str] = "text",
-						 tfidf: Optional[bool] = False,
-						 z_norm: Optional[bool] = False) -> Union[pd.DataFrame, csr_matrix]:
+						 text_column: Optional[str] = "text") -> Union[pd.DataFrame, csr_matrix]:
 	""" Computes a Document Term Matrix and a Matrix of token counts.
 	"""
-	if tfidf:
+	if vectorization_method == "tfidf":
+		vectorizer = TfidfVectorizer(max_features=max_features, lowercase=lower)
+	elif vectorization_method == "cos":	
 		vectorizer = TfidfVectorizer(max_features=max_features, lowercase=lower)
 	else:
 		vectorizer = CountVectorizer(max_features=max_features, lowercase=lower)
+	
+
 	vector = vectorizer.fit_transform(corpus[text_column])
 	features = vectorizer.get_feature_names()
 
 	documents = corpus[document_column]
 	dtm = pd.DataFrame(vector.toarray(), index=list(documents), columns=features)
 
-	if z_norm:
+	if vectorization_method == "zscore":
 		dtm = dtm.apply(z_score)
-	if sparse:
+	elif vectorization_method == "cos":
+		dtm = cosine_similarity(vector, vector)
+	if sparse and vectorization_method != "cos":
 		dtm = csr_matrix(dtm.values)
 	return dtm, vector
 
 def z_score(x: int) -> float:
 	""" Computes z-score."""
 	return (x-x.mean()) / x.std()
+
+# ================================
+# visualization helper functions #
+# ================================
+
+def horizontal_hist(results: pd.DataFrame, 
+					classruns: int,
+					clf_visualization: Optional[bool] = False,
+					ngram: Optional[Tuple[int, int]] = (1,1), 
+					output_name: Optional[str] = "", 
+					save_date: Optional[bool] = False, 
+					vectorization_method: Optional[str] = ""):
+	
+	del results.index.name
+	results = results[["cv", "f1"]]
+	ax = results.plot.barh(color=["#a05195", "#003f5c"], 
+						   edgecolor="black")
+
+	for p in ax.patches: 
+		lr = 0.015 #left-right: smaller = more to the left
+		tb = scaling_t_b #top-bottom: smaller = more downwards
+		ax.text(p.get_width()+lr, 
+				p.get_y()+tb, 
+				str(np.around((p.get_width()), decimals=2)),
+				fontsize=fontsize_horizontal)
+	plt.xticks(np.arange(0,1.1,0.1))
+
+	if clf_visualization:
+		plt.title(r"$\bf" + f"{output_name}" + "$\n", loc="left")
+
+		if save_date:
+			figure_name = f"{output_name}_barh_({datetime.now():%d.%m.%y}_{datetime.now():%H:%M})"
+		else:
+			figure_name = f"{output_name}_barh"
+		plt.savefig(f'../data/figures/clf_results/{figure_name}.png', dpi=300, bbox_inches='tight')
+	else:
+		plt.title(f" Corpus: {output_name}\n Weighting: {vectorization_method} \n N-grams: {str(ngram)} \n Train-test iterations: {classruns} ", loc="left")
+
+		if save_date:
+			figure_name = f"results_barh_{output_name}({vectorization_method}_{classruns}_{ngram}) ({datetime.now():%d.%m.%y}_{datetime.now():%H:%M})"
+		else:
+			figure_name = f"results_barh_{output_name}({vectorization_method}_{classruns}_{ngram})"
+		plt.savefig(f'../data/figures/results/{figure_name}.png', dpi=300, bbox_inches='tight')
+
+def vertical_hist(results: pd.DataFrame, 
+				  classruns: int,
+				  clf_visualization: Optional[bool] = False,
+				  ngram: Optional[Tuple[int, int]] = (1,1),
+				  output_name: Optional[str] = "",
+				  save_date: Optional[bool] = False,
+				  vectorization_method: Optional[str] = ""):
+	
+	del results.index.name
+	ax = results.plot.bar(color=["#003f5c","#a05195"], 
+						  edgecolor="black")
+	for p in ax.patches: 
+		ax.annotate(np.round(p.get_height(), decimals=2), 
+					(p.get_x()+(p.get_width()/2.)+scaling_l_r, p.get_height()),
+					 ha='center', 
+					 va='center', 
+					 xytext=(0, 10), 
+					 textcoords='offset points',
+					 fontsize=fontsize_vertical)
+		plt.yticks(np.arange(0,1.1,0.1))
+
+	if clf_visualization:
+		plt.title(r"$\bf" + f"{output_name}" + "$\n", loc="left")
+
+		if save_date:
+			figure_name = f"{output_name}_bar_({datetime.now():%d.%m.%y}_{datetime.now():%H:%M})"
+		else:
+			figure_name = f"{output_name}_bar"
+		plt.savefig(f'../data/figures/clf_results/{figure_name}.png', dpi=300, bbox_inches='tight')
+
+	else:
+		plt.title(f" Corpus: {output_name}\n Weighting: {vectorization_method} \n N-grams: {str(ngram)} \n Train-test iterations: {classruns} ", loc="left")
+
+		if save_date:
+			figure_name = f"results_bar_{output_name}({vectorization_method}_{classruns}_{ngram}) ({datetime.now():%d.%m.%y}_{datetime.now():%H:%M})"
+		else:
+			figure_name = f"results_bar_{output_name}({vectorization_method}_{classruns}_{ngram})"
+		plt.savefig(f'../data/figures/results/{figure_name}.png', dpi=300, bbox_inches='tight')
+
+def visualize(results: pd.DataFrame, 
+			  visualization_method: str,
+			  classruns: int,
+			  clf_visualization: Optional[bool] = False,
+			  ngram: Optional[Tuple[int, int]] = (1,1),
+			  output_name: Optional[str] = "",
+			  save_date: Optional[bool] = False,
+			  vectorization_method: Optional[str] = ""):
+	
+	if clf_visualization:
+		if visualization_method == "bar_vertical":
+			vertical_hist(results, 
+					  	  classruns=0, 
+					  	  clf_visualization = True,
+						  ngram=ngram, 
+						  output_name=output_name,
+						  save_date=save_date)
+		elif visualization_method == "bar_horizontal":
+			horizontal_hist(results, 
+							classruns=0,
+							clf_visualization = True, 
+							ngram=ngram, 
+							output_name=output_name,
+							save_date=save_date)
+	else:
+		vectorization_methods = {"bow": "Bag of words",
+								 "cos": "Cosine similarity",
+								 "tfidf": "TF-IDF",
+								 "zscore": "Z-Score"}
+		
+
+		if visualization_method == "bar_vertical":
+			vertical_hist(results, 
+					  	  classruns, 
+						  ngram=ngram, 
+						  output_name=output_name,
+						  save_date=save_date,
+						  vectorization_method=vectorization_methods[vectorization_method])
+		elif visualization_method == "bar_horizontal":
+			horizontal_hist(results, 
+							classruns, 
+							ngram=ngram, 
+							output_name=output_name,
+							save_date=save_date,
+							vectorization_method=vectorization_methods[vectorization_method])
+
+
+# ===========================
+# analysis helper functions #
+# ============================
+
+def concat_tables(dir_path: str, 
+                  corpus_name: Optional[str] = "prose",
+                  save_date: Optional[bool] = True) -> pd.DataFrame:
+    
+    all_files = glob.glob(dir_path + "/*.csv")
+    all_tables = {}
+
+    for filename in all_files:
+        if corpus_name in filename:
+            table = pd.read_csv(filename, index_col=None, header=0)
+
+            if save_date:
+                subtract = 17
+            else:
+                subtract = 0
+            name_addition = filename[filename.find(corpus_name)+len(corpus_name)+1:filename.find(").csv")-subtract]
+            table.columns = ["clf", "f1", "cv"]
+            table["clf"] = table["clf"].astype(str) + ": " + name_addition
+            all_tables[name_addition] = table
+    return pd.concat(all_tables.values(), axis=0, ignore_index=True)
+
+def split_tables_by_clf(table: pd.DataFrame, 
+                        saving_dir_path: str):
+    classifiers = ["KNN", "NSC", "MNB", "LR", "LSVM"]
+    
+    for clf in classifiers:
+        clf_table = table[table.clf.str.contains(clf)]
+        clf_table.to_csv(saving_dir_path+clf+".csv", index=False)
+
