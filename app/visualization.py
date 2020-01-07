@@ -25,6 +25,7 @@ def main():
 		visualize(results, 
 				  args.visualization_method,
 				  classruns = 0,
+				  cross_validation = 0,
 				  clf_visualization = True,
 				  output_name = args.path[len(args.directory_name+"clf_tables/"):args.path.find(".csv")])
 	else:
@@ -44,6 +45,7 @@ def main():
 		visualize(results, 
 				  args.visualization_method,
 				  classruns,
+				  cross_validation = 0, #can't be obtained by visualization.py
 				  ngram=ngram, 
 				  vectorization_method=vectorization_method)
 	
