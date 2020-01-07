@@ -4,12 +4,13 @@ from datetime import datetime
 import logging
 import numpy as np
 import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import f1_score 
 from sklearn.metrics.pairwise import pairwise_distances
 from sklearn.model_selection import cross_val_score, train_test_split, GridSearchCV
 from sklearn.naive_bayes import MultinomialNB
-from sklearn.neighbors import KNeighborsClassifier, NearestCentroid
+from sklearn.neighbors import KNeighborsClassifier, NearestCentroid, RadiusNeighborsClassifier
 from sklearn.svm import SVC, LinearSVC
 import sys
 import time
@@ -18,19 +19,26 @@ from utils import visualize
 
 
 #TODO:
-# - lr
 # - extra: decision tress (da sie so lange dauern) 
 
 ### texts_to_csv logging handler ###
-logging.basicConfig(level=logging.INFO, filename="../logs/classification.log", filemode="w")
+logging.basicConfig(level=logging.DEBUG, filename="../logs/classification.log", filemode="w")
 console = logging.StreamHandler()
 console.setLevel(logging.INFO)
 formatter = logging.Formatter("%(levelname)s: %(message)s")
 console.setFormatter(formatter)
 logging.getLogger('').addHandler(console)
 
+mpl_logger = logging.getLogger('matplotlib')
+mpl_logger.setLevel(logging.WARNING)
+
 def main():
-	st = time.time()
+	# ================
+	# time managment #
+	# ================
+
+	program_st = time.time()
+	clf_durations = defaultdict(list)
 
 	# ================
 	# corpus reading # 
@@ -78,9 +86,8 @@ def main():
 		logging.info(f"The vectorization method '{args.vectorization_method}' isn't a available.")
 		sys.exit()
 
-	logging.info(f"Read and vectorized corpus ({int((time.time() - st)/60)} minute(s)).")
-
-
+	logging.info(f"Read and vectorized corpus ({int((time.time() - program_st)/60)} minute(s)).")
+	
 	# ================
 	# classification # 
 	# ================
@@ -102,6 +109,8 @@ def main():
 		# K-Nearest Neighbors (+ z-scores = Burrows Delta) #
 		# ==================================================
 
+		knn_st = time.time()
+
 		knn_clf = KNeighborsClassifier()
 		knn_model = knn_clf.fit(X_train, y_train)
 		knn_y_pred = knn_model.predict(X_test)
@@ -110,13 +119,22 @@ def main():
 		if args.vectorization_method == "zscore":
 			f1_dict["D-KNN"].append(knn_f1_score)
 			cv_dict["D-KNN"].append(knn_cross_val)
+
+			knn_duration = float(time.time() - knn_st)
+			clf_durations["D-KNN"].append(knn_duration)
+			logging.info(f"Run-time D-KNN: {knn_duration} seconds")
 		else:
 			f1_dict["KNN"].append(knn_f1_score)
 			cv_dict["KNN"].append(knn_cross_val)
 
+			knn_duration = float(time.time() - knn_st)
+			clf_durations["KNN"].append(knn_duration)
+			logging.info(f"Run-time KNN: {knn_duration} seconds")
+
 		# Hyperparameter optimization #
 
 		if args.use_tuning:
+			tknn_st = time.time()
 			tknn_parameters = {"n_neighbors": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
 							   "weights": ["uniform", "distance"],
 							   "algorithm": ["brute"],
@@ -136,17 +154,93 @@ def main():
 			tknn_f1_score = f1_score(y_test, tknn_y_pred, average="micro")
 			tknn_cross_val = np.mean(cross_val_score(tknn_clf, X_train, y_train, cv=cv, scoring="f1_micro"))
 			if args.vectorization_method == "zscore":
-				f1_dict["D-tKNN"].append(knn_f1_score)
-				cv_dict["D-tKNN"].append(knn_cross_val)
-			else:
-				f1_dict["tKNN"].append(knn_f1_score)
-				cv_dict["tKNN"].append(knn_cross_val)
+				f1_dict["D-tKNN"].append(tknn_f1_score)
+				cv_dict["D-tKNN"].append(tknn_cross_val)
+				logging.debug(f"D-tKNN best params: {tknn_grid.best_params_}")
 
+				tknn_duration = float(time.time() - tknn_st)
+				clf_durations["D-tKNN"].append(tknn_duration)
+				logging.info(f"Run-time D-tKNN: {tknn_duration} seconds")
+			else:
+				f1_dict["tKNN"].append(tknn_f1_score)
+				cv_dict["tKNN"].append(tknn_cross_val)
+				logging.debug(f"tKNN best params: {tknn_grid.best_params_}")
+
+				tknn_duration = float(time.time() - tknn_st)
+				clf_durations["tKNN"].append(tknn_duration)
+				logging.info(f"Run-time tKNN: {tknn_duration} seconds")
 
 		# =============================================================
-		# Nearest (shrunken) Centroids(+ z-scores = Burrows Delta 2) #
+		# Radius Neighbors (+ z-scores = Burrows Delta 2) #
 		# =============================================================
 		
+		rn_st = time.time()
+
+		rn_clf = RadiusNeighborsClassifier(outlier_label = "most_frequent")
+		rn_model = rn_clf.fit(X_train, y_train)
+		rn_y_pred = rn_model.predict(X_test)
+		rn_f1_score = f1_score(y_test, rn_y_pred, average="micro")
+		rn_cross_val = np.mean(cross_val_score(rn_clf, X_train, y_train, cv=cv, scoring="f1_micro"))
+		if args.vectorization_method == "zscore":
+			f1_dict["D-RN"].append(rn_f1_score)
+			cv_dict["D-RN"].append(rn_cross_val)
+
+			rn_duration = float(time.time() - rn_st)
+			clf_durations["D-RN"].append(rn_duration)
+			logging.info(f"Run-time D-RN: {rn_duration} seconds")
+		else:
+			f1_dict["RN"].append(rn_f1_score)
+			cv_dict["RN"].append(rn_cross_val)
+
+			rn_duration = float(time.time() - rn_st)
+			clf_durations["RN"].append(rn_duration)
+			logging.info(f"Run-time RN: {rn_duration} seconds")
+
+		# Hyperparameter optimization #
+		
+		if args.use_tuning:
+
+			trn_st = time.time()
+
+			trn_parameters = {"radius": [0.0001, 0.001, 0.01, 0.1, 0.5, 1.0, 2.0],
+							  "weights": ["uniform", "distance"],
+							  "algorithm": ["brute"],
+							  "leaf_size": [1, 2, 3, 4, 5],
+							  "p": [1, 2],
+							  "outlier_label": ["most_frequent"],
+							  "n_jobs": [n_jobs]}
+
+			trn_grid = GridSearchCV(rn_clf, trn_parameters, cv=cv, scoring="f1_micro")
+			trn_grid.fit(X_train, y_train)
+			
+			trn_clf = RadiusNeighborsClassifier(**trn_grid.best_params_)
+			trn_model = trn_clf.fit(X_train, y_train)
+			trn_y_pred = trn_model.predict(X_test)
+			trn_f1_score = f1_score(y_test, trn_y_pred, average="micro")
+			trn_cross_val = np.mean(cross_val_score(trn_clf, X_train, y_train, cv=cv, scoring="f1_micro"))
+			if args.vectorization_method == "zscore":
+				f1_dict["D-tRN"].append(trn_f1_score)
+				cv_dict["D-tRN"].append(trn_cross_val)
+				logging.debug(f"D-tRN best params: {trn_grid.best_params_}")
+
+				trn_duration = float(time.time() - trn_st)
+				clf_durations["D-tRN"].append(trn_duration)
+				logging.info(f"Run-time D-tRN: {trn_duration} seconds")
+			else:
+				f1_dict["tRN"].append(trn_f1_score)
+				cv_dict["tRN"].append(trn_cross_val)
+				logging.debug(f"tRN best params: {trn_grid.best_params_}")
+
+				trn_duration = float(time.time() - trn_st)
+				clf_durations["tRN"].append(trn_duration)
+				logging.info(f"Run-time tRN: {trn_duration} seconds")
+		
+		# =============================================================
+		# Nearest (shrunken) Centroids (+ z-scores = Burrows Delta 2) #
+		# =============================================================
+		
+		nsc_st = time.time()
+
 		nsc_clf = NearestCentroid()
 		nsc_model = nsc_clf.fit(X_train, y_train)
 		nsc_y_pred = nsc_model.predict(X_test)
@@ -155,16 +249,25 @@ def main():
 		if args.vectorization_method == "zscore":
 			f1_dict["D-NSC"].append(nsc_f1_score)
 			cv_dict["D-NSC"].append(nsc_cross_val)
+
+			nsc_duration = float(time.time() - nsc_st)
+			clf_durations["D-NSC"].append(nsc_duration)
+			logging.info(f"Run-time D-NSC: {nsc_duration} seconds")
 		else:
 			f1_dict["NSC"].append(nsc_f1_score)
 			cv_dict["NSC"].append(nsc_cross_val)
 
+			nsc_duration = float(time.time() - nsc_st)
+			clf_durations["NSC"].append(nsc_duration)
+			logging.info(f"Run-time NSC: {nsc_duration} seconds")
+
+
 		# Hyperparameter optimization #
 		
 		if args.use_tuning:
+			tnsc_st = time.time()
 			tnsc_parameters = {"metric": ['euclidean', 'manhattan'],
 							   "shrink_threshold": [None]}
-
 			# metric: 'euclidean' and 'manhattan' only avaible metrics for sparse input
 			# shrink_threshold: is not supported for sparse input
 
@@ -177,11 +280,21 @@ def main():
 			tnsc_f1_score = f1_score(y_test, tnsc_y_pred, average="micro")
 			tnsc_cross_val = np.mean(cross_val_score(tnsc_clf, X_train, y_train, cv=cv, scoring="f1_micro"))
 			if args.vectorization_method == "zscore":
-				f1_dict["D-tNSC"].append(nsc_f1_score)
-				cv_dict["D-tNSC"].append(nsc_cross_val)
+				f1_dict["D-tNSC"].append(tnsc_f1_score)
+				cv_dict["D-tNSC"].append(tnsc_cross_val)
+				logging.debug(f"D-tNSC best params: {tnsc_grid.best_params_}")
+
+				tnsc_duration = float(time.time() - tnsc_st)
+				clf_durations["D-tNSC"].append(tnsc_duration)
+				logging.info(f"Run-time D-tNSC: {tnsc_duration} seconds")
 			else:
-				f1_dict["tNSC"].append(nsc_f1_score)
-				cv_dict["tNSC"].append(nsc_cross_val)
+				f1_dict["tNSC"].append(tnsc_f1_score)
+				cv_dict["tNSC"].append(tnsc_cross_val)
+				logging.debug(f"tNSC best params: {tnsc_grid.best_params_}")
+
+				tnsc_duration = float(time.time() - tnsc_st)
+				clf_durations["tNSC"].append(tnsc_duration)
+				logging.info(f"Run-time tNSC: {tnsc_duration} seconds")
 
 		
 		# =================================================
@@ -189,6 +302,9 @@ def main():
 		# =================================================
 		
 		if args.vectorization_method != "zscore":
+
+			mnb_st = time.time()
+
 			mnb_clf = MultinomialNB()
 			mnb_model = mnb_clf.fit(X_train, y_train)
 			mnb_y_pred = mnb_model.predict(X_test)
@@ -196,10 +312,17 @@ def main():
 			mnb_cross_val = np.mean(cross_val_score(mnb_clf, X_train, y_train, cv=cv, scoring="f1_micro"))
 			f1_dict["MNB"].append(mnb_f1_score)
 			cv_dict["MNB"].append(mnb_cross_val)
+
+			mnb_duration = float(time.time() - mnb_st)
+			clf_durations["MNB"].append(mnb_duration)
+			logging.info(f"Run-time MNB: {mnb_duration} seconds")
 		
 			# Hyperparameter optimization #
 
 			if args.use_tuning:
+
+				tmnb_st = time.time()
+
 				tmnb_parameters = {"alpha": [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05,
 											 0.1, 0.5, 1.0, 2.0, 3.0],
 								   "fit_prior": [True, False]}
@@ -214,6 +337,11 @@ def main():
 				tmnb_cross_val = np.mean(cross_val_score(tmnb_clf, X_train, y_train, cv=cv, scoring="f1_micro"))
 				f1_dict["tMNB"].append(tmnb_f1_score)
 				cv_dict["tMNB"].append(tmnb_cross_val)
+				logging.debug(f"tMNB best params: {tmnb_grid.best_params_}")
+
+				tmnb_duration = float(time.time() - tmnb_st)
+				clf_durations["tMNB"].append(tmnb_duration)
+				logging.info(f"Run-time tMNB: {tmnb_duration} seconds")
 
 		
 		
@@ -221,6 +349,8 @@ def main():
 		# Linear Support Vector Machines #
 		# ================================
 		
+		lsvm_st = time.time()
+
 		lsvm_clf = LinearSVC()
 		lsvm_model = lsvm_clf.fit(X_train, y_train)
 		lsvm_y_pred = lsvm_model.predict(X_test)
@@ -228,11 +358,18 @@ def main():
 		lsvm_cross_val = np.mean(cross_val_score(lsvm_clf, X_train, y_train, cv=cv, scoring="f1_micro"))
 		f1_dict["LSVM"].append(lsvm_f1_score)
 		cv_dict["LSVM"].append(lsvm_cross_val)
+
+		lsvm_duration = float(time.time() - lsvm_st)
+		clf_durations["LSVM"].append(lsvm_duration)
+		logging.info(f"Run-time LSVM: {lsvm_duration} seconds")
 		
 
 		# Hyperparameter optimization #
 		
 		if args.use_tuning:
+
+			tlsvm_st = time.time()
+
 			tlsvm_parameters = {"penalty": ["l2"],
 							   "loss": ["squared_hinge"],
 							   "C": [0.0001, 0.001, 0.01, 0.1, 1.0, 2.0, 3.0, 4.0, 5.0, 10.0],
@@ -250,11 +387,18 @@ def main():
 			tlsvm_cross_val = np.mean(cross_val_score(tlsvm_clf, X_train, y_train, cv=cv, scoring="f1_micro"))
 			f1_dict["tLSVM"].append(tlsvm_f1_score)
 			cv_dict["tLSVM"].append(tlsvm_cross_val)
+			logging.debug(f"tLSVM best params: {tlsvm_grid.best_params_}")
+
+			tlsvm_duration = float(time.time() - tlsvm_st)
+			clf_durations["tLSVM"].append(tlsvm_duration)
+			logging.info(f"Run-time tLSVM: {tlsvm_duration} seconds")
 		
 		# =====================
 		# Logistic Regression #
 		# =====================
 		
+		lr_st = time.time()
+
 		# every solver except "liblinear" had problems with the convergence
 		lr_clf = LogisticRegression(multi_class="ovr", solver="liblinear")
 		lr_model = lr_clf.fit(X_train, y_train)
@@ -264,9 +408,16 @@ def main():
 		f1_dict["LR"].append(lr_f1_score)
 		cv_dict["LR"].append(lr_cross_val)
 
+		lr_duration = float(time.time() - lr_st)
+		clf_durations["LR"].append(lr_duration)
+		logging.info(f"Run-time LR: {lr_duration} seconds")
+
 		# Hyperparameter optimization #
 		
 		if args.use_tuning:
+
+			tlr_st = time.time()
+
 			tlr_parameters = {"penalty": ["l1"],
 							  "tol": [0.0001, 0.001, 0.01, 0.1],
 							  "C": [0.0001, 0.001, 0.01, 0.1, 1.0, 2.0, 3.0, 4.0, 5.0, 10.0],
@@ -286,12 +437,19 @@ def main():
 			tlr_cross_val = np.mean(cross_val_score(tlr_clf, X_train, y_train, cv=cv))
 			f1_dict["tLR"].append(tlr_f1_score)
 			cv_dict["tLR"].append(tlr_cross_val)
+			logging.debug(f"tLR best params: {tlr_grid.best_params_}")
+
+			tlr_duration = float(time.time() - tlr_st)
+			clf_durations["tLR"].append(tlr_duration)
+			logging.info(f"Run-time tLR: {tlr_duration} seconds")
 		
 		"""
 		# ==========================================
 		# Support Vector Machines (without linear) #
 		# ==========================================
 		
+		svm_st = time.time()
+
 		svm_clf = SVC()
 		svm_model = svm_clf.fit(X_train, y_train)
 		svm_y_pred = svm_model.predict(X_test)
@@ -300,10 +458,16 @@ def main():
 		f1_dict["SVM"].append(svm_f1_score)
 		cv_dict["SVM"].append(svm_cross_val)
 		
+		svm_duration = float(time.time() - svm_st)
+		clf_durations["SVM"].append(svm_duration)
+		logging.info(f"Run-time SVM: {svm_duration} seconds")
 
 		# Hyperparameter optimization #
 		
 		if args.use_tuning:
+	
+			tsvm_st = time.time()
+
 			tsvm_parameters = {"C": [0.0001, 0.001, 0.01, 0.1, 1.0, 2.0, 3.0, 4.0, 5.0, 10.0],
 							   "kernel": ["poly"],#, "rbf", "sigmoid"],
 							   "degree": [1, 2, 3, 4, 5],
@@ -314,7 +478,6 @@ def main():
 			tsvm_grid = GridSearchCV(svm_clf, tsvm_parameters, cv=cv, scoring="f1_micro")
 			tsvm_grid.fit(X_train, y_train)
 
-			print(tsvm_grid.best_params_)
 
 			tsvm_clf = SVC(**tsvm_grid.best_params_)
 			tsvm_model = tsvm_clf.fit(X_train, y_train)
@@ -323,9 +486,62 @@ def main():
 			tsvm_cross_val = np.mean(cross_val_score(tsvm_clf, X_train, y_train, cv=cv, scoring="f1_micro"))
 			f1_dict["tSVM"].append(tsvm_f1_score)
 			cv_dict["tSVM"].append(tsvm_cross_val)
-		
-		"""
+			logging.debug(f"tSVM best params: {tsvm_grid.best_params_}")
 
+			tsvm_duration = float(time.time() - tsvm_st)
+			clf_durations["tSVM"].append(tsvm_duration)
+			logging.info(f"Run-time tSVM: {tsvm_duration} seconds")
+		
+		# ================
+		# Random Forests #
+		# ================
+		
+		rf_st = time.time()
+
+		rf_clf = RandomForestClassifier()
+		rf_model = rf_clf.fit(X_train, y_train)
+		rf_y_pred = rf_model.predict(X_test)
+		rf_f1_score = f1_score(y_test, rf_y_pred, average="micro")
+		rf_cross_val = np.mean(cross_val_score(rf_clf, X_train, y_train, cv=cv, scoring="f1_micro"))
+		f1_dict["RF"].append(rf_f1_score)
+		cv_dict["RF"].append(rf_cross_val)
+		
+		rf_duration = float(time.time() - rf_st)
+		clf_durations["RF"].append(rf_duration)
+		logging.info(f"Run-time RF: {rf_duration} seconds")
+
+		# Hyperparameter optimization #
+		
+		if args.use_tuning:
+	
+			trf_st = time.time()
+
+			trf_parameters = {"n_estimators": [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000],
+							  "max_features": ["auto", "sqrt"],
+							  "max_depth": [10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
+							  "min_samples_split": [2, 5, 10],
+							  "min_samples_leaf": [1, 2, 3, 4],
+							  "bootstrap": [True, False],
+							  "n_jobs": [n_jobs]}
+
+			trf_grid = GridSearchCV(rf_clf, trf_parameters, cv=cv, scoring="f1_micro")
+			trf_grid.fit(X_train, y_train)
+
+
+			trf_clf = RandomForestClassifier(**trf_grid.best_params_)
+			trf_model = trf_clf.fit(X_train, y_train)
+			trf_y_pred = trf_model.predict(X_test)
+			trf_f1_score = f1_score(y_test, trf_y_pred, average="micro")
+			trf_cross_val = np.mean(cross_val_score(trf_clf, X_train, y_train, cv=cv, scoring="f1_micro"))
+			f1_dict["tRF"].append(trf_f1_score)
+			cv_dict["tRF"].append(trf_cross_val)
+			logging.debug(f"tRF best params: {tRF_grid.best_params_}")
+
+			trf_duration = float(time.time() - trf_st)
+			clf_durations["tRF"].append(trf_duration)
+			logging.info(f"Run-time tRF: {trf_duration} seconds")
+		
+	"""
 	# ================
 	# Saving results #
 	# ================
@@ -339,7 +555,6 @@ def main():
 	results = pd.DataFrame(final_f1_dict).round(3).T
 
 	
-	
 	if args.save_date:
 		csv_name = f"classification_{args.corpus_name}({args.vectorization_method}_{classruns}_{args.ngram})_({datetime.now():%d.%m.%y}_{datetime.now():%H:%M})"
 	else:
@@ -349,14 +564,47 @@ def main():
 	if args.visualization:
 		logging.info(r"Saving figure of results to data/figures/results/")
 		visualize(results,
-			  	  "bar_horizontal",
+			  	  "bar_vertical",
 			  	  classruns,
-			  	  ngram=args.ngram, 
+			  	  cross_validation=cv,
+			  	  ngram=args.ngram,
+			  	  output_name=args.corpus_name, 
+			  	  save_date=args.save_date,
 			  	  vectorization_method=args.vectorization_method)
 
 
+	# =================================
+	# Saving classification durations #
+	# =================================
+
+	mean_clf_durations = {}
+
+	for k, v in clf_durations.items():
+		mean_clf_durations[k] = np.mean(v)
+
+	clf_durations_df = pd.DataFrame(mean_clf_durations.items(), columns=["clf", "durations"])
+
+
+	if args.save_date:
+		duration_name = f"clf_durations_({datetime.now():%d.%m.%y}_{datetime.now():%H:%M})"
+	else:
+		duration_name = "clf_durations"
+	clf_durations_df.to_csv(f"../data/tables/{duration_name}.csv")
+
 	
-	logging.info(f"Run-time: {int((time.time() - st)/60)} minute(s).")
+	if args.visualization:
+		logging.info(r"Saving figure of classification durations to data/figures/durations/")
+		visualize(clf_durations_df,
+			  	  "pie",
+			  	  classruns=classruns,
+			  	  cross_validation=cv,
+			  	  ngram=args.ngram, 
+			  	  output_name=args.corpus_name,
+			  	  save_date=args.save_date,
+			  	  vectorization_method=args.vectorization_method)
+
+	program_duration = float(time.time() - program_st)
+	logging.info(f"Run-time: {int(program_duration)/60} minute(s).")
 
 if __name__ == "__main__":
 	
@@ -370,7 +618,6 @@ if __name__ == "__main__":
 	parser.add_argument("--use_tuning", "-ut", action="store_true", help="Indicates if hyperparameter optimization should be used.")
 	parser.add_argument("--vectorization_method", "-vm", type=str, default="bow", help="Indicates the vectorization method. Default is 'bow'. Other possible values are 'zscore', 'tfidf' and 'cos'.")
 	parser.add_argument("--visualization", "-v", action="store_true", help="Indicates if results should be visualized.")
-
 	
 	args = parser.parse_args()
 
