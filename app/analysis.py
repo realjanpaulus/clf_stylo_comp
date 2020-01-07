@@ -35,6 +35,7 @@ def main():
 		visualize(clf_table,
 				  args.visualization_method,
 				  classruns = 0,
+				  cross_validation = 0,
 				  clf_visualization = True,
 				  output_name = clf_name,
 				  save_date = args.save_date)
