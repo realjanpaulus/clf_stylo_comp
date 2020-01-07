@@ -180,6 +180,7 @@ def z_score(x: int) -> float:
 
 def horizontal_hist(results: pd.DataFrame, 
 					classruns: int,
+				  	cross_validation = int,
 					clf_visualization: Optional[bool] = False,
 					ngram: Optional[Tuple[int, int]] = (1,1), 
 					output_name: Optional[str] = "", 
@@ -209,7 +210,7 @@ def horizontal_hist(results: pd.DataFrame,
 			figure_name = f"{output_name}_barh"
 		plt.savefig(f'../data/figures/clf_results/{figure_name}.png', dpi=300, bbox_inches='tight')
 	else:
-		plt.title(f" Corpus: {output_name}\n Weighting: {vectorization_method} \n N-grams: {str(ngram)} \n Train-test iterations: {classruns} ", loc="left")
+		plt.title(f" Corpus: {output_name}\n Weighting: {vectorization_method} \n N-grams: {str(ngram)} \n Train-test iterations: {classruns} \n Cross-Validation: {cross_validation}", loc="left")
 
 		if save_date:
 			figure_name = f"results_barh_{output_name}({vectorization_method}_{classruns}_{ngram}) ({datetime.now():%d.%m.%y}_{datetime.now():%H:%M})"
@@ -219,6 +220,7 @@ def horizontal_hist(results: pd.DataFrame,
 
 def vertical_hist(results: pd.DataFrame, 
 				  classruns: int,
+				  cross_validation = int,
 				  clf_visualization: Optional[bool] = False,
 				  ngram: Optional[Tuple[int, int]] = (1,1),
 				  output_name: Optional[str] = "",
@@ -248,7 +250,7 @@ def vertical_hist(results: pd.DataFrame,
 		plt.savefig(f'../data/figures/clf_results/{figure_name}.png', dpi=300, bbox_inches='tight')
 
 	else:
-		plt.title(f" Corpus: {output_name}\n Weighting: {vectorization_method} \n N-grams: {str(ngram)} \n Train-test iterations: {classruns} ", loc="left")
+		plt.title(f" Corpus: {output_name}\n Weighting: {vectorization_method} \n N-grams: {str(ngram)} \n Train-test iterations: {classruns} \n Cross-Validation: {cross_validation}", loc="left")
 
 		if save_date:
 			figure_name = f"results_bar_{output_name}({vectorization_method}_{classruns}_{ngram}) ({datetime.now():%d.%m.%y}_{datetime.now():%H:%M})"
@@ -256,9 +258,43 @@ def vertical_hist(results: pd.DataFrame,
 			figure_name = f"results_bar_{output_name}({vectorization_method}_{classruns}_{ngram})"
 		plt.savefig(f'../data/figures/results/{figure_name}.png', dpi=300, bbox_inches='tight')
 
+def pie(results: pd.DataFrame,
+		classruns: int,
+		cross_validation = int,
+	  	ngram: Optional[Tuple[int, int]] = (1,1),
+	  	output_name: Optional[str] = "",
+		save_date: Optional[bool] = False,
+		vectorization_method: Optional[str] = ""):
+	
+	plt.cla()
+	plt.figure(figsize=(6,4))
+	colors = ["#665191", "#ffa999", "#8eca98", 
+			  "#003f5c", "#007885", "#ffa600",
+			  "#003f5c", "#2f4b7c", "#a05195",
+			  "#d45087", "#f95d6a", "#ff7c43"]
+
+	results["percentage"] = results.durations / results.durations.sum()
+	plt.pie(results["percentage"], 
+			autopct='%.0f%%',
+			labels=results["clf"],
+			radius=1.,
+			colors=colors[::-1],
+			textprops={'fontsize': 7})
+	title_text = r"\ Duration\ of\ " + f"{output_name}" + r"\ corpus"
+	bold_title = r"$\bf{" + title_text + "}$ \n"
+	plt.title(bold_title + f" Corpus: {output_name}\n Weighting: {vectorization_method} \n N-grams: {str(ngram)} \n Train-test iterations: {classruns} \n Cross-Validation: {cross_validation}", 
+			  loc="left",
+			  fontsize=7)
+	if save_date:
+		figure_name = f"pie_{output_name}({vectorization_method}_{classruns}_{ngram}) ({datetime.now():%d.%m.%y}_{datetime.now():%H:%M})"
+	else:
+		figure_name = f"pie_{output_name}({vectorization_method}_{classruns}_{ngram})"
+	plt.savefig(f'../data/figures/durations/{figure_name}.png', dpi=300, bbox_inches='tight')
+
 def visualize(results: pd.DataFrame, 
 			  visualization_method: str,
 			  classruns: int,
+			  cross_validation = int,
 			  clf_visualization: Optional[bool] = False,
 			  ngram: Optional[Tuple[int, int]] = (1,1),
 			  output_name: Optional[str] = "",
@@ -269,6 +305,7 @@ def visualize(results: pd.DataFrame,
 		if visualization_method == "bar_vertical":
 			vertical_hist(results, 
 					  	  classruns=0, 
+				  		  cross_validation = 0,
 					  	  clf_visualization = True,
 						  ngram=ngram, 
 						  output_name=output_name,
@@ -276,6 +313,7 @@ def visualize(results: pd.DataFrame,
 		elif visualization_method == "bar_horizontal":
 			horizontal_hist(results, 
 							classruns=0,
+				  		  	cross_validation = 0,
 							clf_visualization = True, 
 							ngram=ngram, 
 							output_name=output_name,
@@ -286,10 +324,10 @@ def visualize(results: pd.DataFrame,
 								 "tfidf": "TF-IDF",
 								 "zscore": "Z-Score"}
 		
-
 		if visualization_method == "bar_vertical":
 			vertical_hist(results, 
-					  	  classruns, 
+					  	  classruns,
+				  		  cross_validation = cross_validation,
 						  ngram=ngram, 
 						  output_name=output_name,
 						  save_date=save_date,
@@ -297,10 +335,19 @@ def visualize(results: pd.DataFrame,
 		elif visualization_method == "bar_horizontal":
 			horizontal_hist(results, 
 							classruns, 
+				  		  	cross_validation = cross_validation,
 							ngram=ngram, 
 							output_name=output_name,
 							save_date=save_date,
 							vectorization_method=vectorization_methods[vectorization_method])
+		elif visualization_method == "pie":
+			pie(results,
+				classruns,
+	  		  	cross_validation = cross_validation,
+				ngram=ngram, 
+				output_name=output_name,
+				save_date=save_date,
+				vectorization_method=vectorization_methods[vectorization_method])
 
 
 # ===========================
