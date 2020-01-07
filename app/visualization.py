@@ -7,6 +7,7 @@ import sys
 from typing import Dict, List, Optional, Tuple
 from utils import visualize
 
+### visualization logging handler ###
 logging.basicConfig(level=logging.INFO, filename="../logs/visualization.log", filemode="w")
 console = logging.StreamHandler()
 console.setLevel(logging.INFO)

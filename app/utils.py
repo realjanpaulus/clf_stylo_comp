@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from datetime import datetime
 import glob
 from nltk import word_tokenize

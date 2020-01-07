@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import argparse
 from collections import defaultdict
 from datetime import datetime
@@ -17,22 +18,8 @@ import time
 from utils import document_term_matrix
 from utils import visualize
 
-
-#TODO:
-# - extra: decision tress (da sie so lange dauern) 
-
-### texts_to_csv logging handler ###
-logging.basicConfig(level=logging.DEBUG, filename="../logs/classification.log", filemode="w")
-console = logging.StreamHandler()
-console.setLevel(logging.INFO)
-formatter = logging.Formatter("%(levelname)s: %(message)s")
-console.setFormatter(formatter)
-logging.getLogger('').addHandler(console)
-
-mpl_logger = logging.getLogger('matplotlib')
-mpl_logger.setLevel(logging.WARNING)
-
 def main():
+
 	# ================
 	# time managment #
 	# ================
@@ -53,9 +40,10 @@ def main():
 	n_jobs = args.n_jobs
 
 	if args.ngram:
-		ngram_range = tuple(args.ngram)
+		ngrams = tuple(args.ngram)
 	else:
-		ngram_range = (1,1)
+		ngrams = (1,1)
+
 
 	classruns = args.classruns
 	train_size = 0.8
@@ -67,26 +55,64 @@ def main():
 		cv += 1
 	elif cv > 10:
 		cv = 10
+	
+	# ================================
+	# classification logging handler #
+	# ================================
+	logging_filename = f"../logs/classification_{args.vectorization_method}_{args.max_features}_{ngrams}.log"
+	logging.basicConfig(level=logging.DEBUG, filename=logging_filename, filemode="w")
+	console = logging.StreamHandler()
+	console.setLevel(logging.INFO)
+	formatter = logging.Formatter("%(levelname)s: %(message)s")
+	console.setFormatter(formatter)
+	logging.getLogger('').addHandler(console)
+
+	mpl_logger = logging.getLogger('matplotlib')
+	mpl_logger.setLevel(logging.WARNING)
+
 	logging.info(f"Dynamically determined cross validation value is {cv}.")
+
+	
 
 	# =============
 	# vectorizing # 
 	# =============
 
 	if args.vectorization_method == "bow":
-		dtm, vector = document_term_matrix(corpus, "bow", "title", ngram_range=ngram_range, sparse=True)
+		dtm, vector = document_term_matrix(corpus, 
+										   "bow", 
+										   "title", 
+										   max_features=args.max_features,
+										   ngram_range=ngrams, 
+										   sparse=True)
 	elif args.vectorization_method == "zscore":
-		dtm, vector = document_term_matrix(corpus, "zscore", "title", ngram_range=ngram_range, sparse=True)
-		logging.info("Multinomial Naive Bayes can't be used with a z-score matrix. It won't be used.")
+		dtm, vector = document_term_matrix(corpus, 
+										   "zscore", 
+										   "title", 
+										   max_features=args.max_features,
+										   ngram_range=ngrams, 
+										   sparse=True)
+		logging.info("Multinomial Naive Bayes can't be used with a z-score matrix, so it won't be used.")
 	elif args.vectorization_method == "tfidf":
-		dtm, vector = document_term_matrix(corpus, "tfidf", "title", ngram_range=ngram_range, sparse=True)
+		dtm, vector = document_term_matrix(corpus, 
+										   "tfidf", 
+										   "title", 
+										   max_features=args.max_features,
+										   ngram_range=ngrams, 
+										   sparse=True)
 	elif args.vectorization_method == "cos":
-		dtm, vector = document_term_matrix(corpus, "cos", "title", ngram_range=ngram_range, sparse=True)
+		dtm, vector = document_term_matrix(corpus, 
+										   "cos", 
+										   "title",
+										   max_features=args.max_features, 
+										   ngram_range=ngrams, 
+										   sparse=True)
 	else:
 		logging.info(f"The vectorization method '{args.vectorization_method}' isn't a available.")
 		sys.exit()
 
 	logging.info(f"Read and vectorized corpus ({int((time.time() - program_st)/60)} minute(s)).")
+	logging.info(f"Vectorization method: {args.vectorization_method}.")
 	
 	# ================
 	# classification # 
@@ -556,9 +582,9 @@ def main():
 
 	
 	if args.save_date:
-		csv_name = f"classification_{args.corpus_name}({args.vectorization_method}_{classruns}_{args.ngram})_({datetime.now():%d.%m.%y}_{datetime.now():%H:%M})"
+		csv_name = f"classification_{args.corpus_name}({args.vectorization_method}_{classruns}_{ngrams})_({datetime.now():%d.%m.%y}_{datetime.now():%H:%M})"
 	else:
-		csv_name = f"classification_{args.corpus_name}({args.vectorization_method}_{classruns}_{args.ngram})"
+		csv_name = f"classification_{args.corpus_name}({args.vectorization_method}_{classruns}_{ngrams})"
 	results.to_csv(f"../data/tables/{csv_name}.csv")
 
 	if args.visualization:
@@ -567,7 +593,7 @@ def main():
 			  	  "bar_vertical",
 			  	  classruns,
 			  	  cross_validation=cv,
-			  	  ngram=args.ngram,
+			  	  ngram=ngrams,
 			  	  output_name=args.corpus_name, 
 			  	  save_date=args.save_date,
 			  	  vectorization_method=args.vectorization_method)
@@ -598,7 +624,7 @@ def main():
 			  	  "pie",
 			  	  classruns=classruns,
 			  	  cross_validation=cv,
-			  	  ngram=args.ngram, 
+			  	  ngram=ngrams, 
 			  	  output_name=args.corpus_name,
 			  	  save_date=args.save_date,
 			  	  vectorization_method=args.vectorization_method)
@@ -612,7 +638,8 @@ if __name__ == "__main__":
 	parser.add_argument("path", type=str, help="Path to the corpus as csv-file.")
 	parser.add_argument("--classruns", "-cr", type=int, nargs="?", default=20, help="Sets the number of classification runs.")
 	parser.add_argument("--corpus_name", "-cn", type=str, nargs="?", default="prose", help="Indicates the name of the corpus for the output file.")
-	parser.add_argument("--ngram", "-ng", type=int, nargs="?", default=(1,1), help="Passes the ngram range.")
+	parser.add_argument("--max_features", "-mf", type=int, default=2000, help="Indicates the number of most frequent words.")
+	parser.add_argument("--ngram", "-ng", type=int, nargs="*", action="store", default=(1,1), help="Passes the ngram range.")
 	parser.add_argument("--n_jobs", "-nj", type=int, default=1, help="Indicates the number of processors used for computation.")
 	parser.add_argument("--save_date", "-sd", action="store_true", help="Indicates if the creation date of the results should be saved.")
 	parser.add_argument("--use_tuning", "-ut", action="store_true", help="Indicates if hyperparameter optimization should be used.")

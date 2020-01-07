@@ -4,6 +4,7 @@ import logging
 import pandas as pd
 from utils import split_tables_by_clf, concat_tables, visualize
 
+### analysis logging handler ###
 logging.basicConfig(level=logging.INFO, filename="../logs/analysis.log", filemode="w")
 console = logging.StreamHandler()
 console.setLevel(logging.INFO)
