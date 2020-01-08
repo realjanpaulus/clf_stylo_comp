@@ -3,8 +3,11 @@ from itertools import product
 import logging
 import subprocess
 import sys
+import time
 
 def main():
+
+	program_st = time.time()
 
 	### run logging handler ###
 
@@ -17,14 +20,18 @@ def main():
 	
 	vectorization_methods = ["bow", "zscore", "tfidf", "cos"]
 	max_features = [500, 1000, 2000, 3000]
-	n_grams = [(1,1), (1,2)]
+	n_grams = [(1,1), (1,2), (2,2)]
 
-	vectorization_methods = ["bow", "zscore"]
-	max_features = [500, 1000]
-	n_grams = [(1,1), (1,2)]
+	# ==================================================
+	# Experiment 1: all classifications duration test  #
+	# ==================================================
+	if args.experiment == 1:
+		logging.info("Starting experiment 1: all classifications duration test.")
+		vectorization_methods = ["bow"]
+		max_features = [1000]
+		n_grams = [(1,1)]
 
 	cartesian_inputs = list(product(vectorization_methods, max_features, n_grams))
-	print(cartesian_inputs)
 	for idx, t in enumerate(cartesian_inputs):
 		
 		logging.info(f"Argument combination {idx+1}/{len(cartesian_inputs)}.")
@@ -32,14 +39,19 @@ def main():
 		logging.info(f"Max Features: {t[1]}.")
 		logging.info(f"N-grams: {t[2]}.")
 
+		command = f"python classification.py {args.path} -cn {args.corpus_name} -mf {t[1]} -ng {t[2][0]} {t[2][1]} -nj {args.n_jobs} -vm {t[0]}"
 		
 		if args.use_tuning:
-			command = f"python classification.py {args.path} -cr 1 -mf {t[1]} -ng {t[2][0]} {t[2][1]} -nj {args.n_jobs} -ut -vm {t[0]}"
-		else:
-			command = f"python classification.py {args.path} -cr 1 -mf {t[1]} -ng {t[2][0]} {t[2][1]} -nj {args.n_jobs} -vm {t[0]}"
+			command += " -ut"
+		if args.save_date:
+			command += " -sd"
+		if args.visualization:
+			command += " -v"
 		
 		subprocess.call(["bash", "-c", command])
 		print("\n")
+	program_duration = float(time.time() - program_st)
+	logging.info(f"Overall run-time: {int(program_duration)/60} minute(s).")
 	
 
 
@@ -48,8 +60,11 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser(prog="run", description="Runs classification script with multiple arguments.")
 	parser.add_argument("path", type=str, help="Path to the corpus.")
 	parser.add_argument("--corpus_name", "-cn", type=str, nargs="?", default="prose", help="Indicates the name of the corpus for the output file.")
+	parser.add_argument("--experiment", "-e", type=int, default=1, help="Indicates the experiment number.")
 	parser.add_argument("--n_jobs", "-nj", type=int, default=1, help="Indicates the number of processors used for computation.")
+	parser.add_argument("--save_date", "-sd", action="store_true", help="Indicates if the creation date of the results should be saved.")
 	parser.add_argument("--use_tuning", "-ut", action="store_true", help="Indicates if hyperparameter optimization should be used.")
+	parser.add_argument("--visualization", "-v", action="store_true", help="Indicates if results should be visualized.")
 	
 	args = parser.parse_args()
 

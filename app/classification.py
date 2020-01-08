@@ -262,7 +262,7 @@ def main():
 				logging.info(f"Run-time tRN: {trn_duration} seconds")
 		
 		# =============================================================
-		# Nearest (shrunken) Centroids (+ z-scores = Burrows Delta 2) #
+		# Nearest (shrunken) Centroids (+ z-scores = Burrows Delta 3) #
 		# =============================================================
 		
 		nsc_st = time.time()
@@ -469,7 +469,7 @@ def main():
 			clf_durations["tLR"].append(tlr_duration)
 			logging.info(f"Run-time tLR: {tlr_duration} seconds")
 		
-		"""
+		
 		# ==========================================
 		# Support Vector Machines (without linear) #
 		# ==========================================
@@ -518,6 +518,7 @@ def main():
 			clf_durations["tSVM"].append(tsvm_duration)
 			logging.info(f"Run-time tSVM: {tsvm_duration} seconds")
 		
+
 		# ================
 		# Random Forests #
 		# ================
@@ -567,7 +568,7 @@ def main():
 			clf_durations["tRF"].append(trf_duration)
 			logging.info(f"Run-time tRF: {trf_duration} seconds")
 		
-	"""
+	
 	# ================
 	# Saving results #
 	# ================
@@ -636,7 +637,7 @@ if __name__ == "__main__":
 	
 	parser = argparse.ArgumentParser(prog="classification", description="Comparison of different classifier.")
 	parser.add_argument("path", type=str, help="Path to the corpus as csv-file.")
-	parser.add_argument("--classruns", "-cr", type=int, nargs="?", default=20, help="Sets the number of classification runs.")
+	parser.add_argument("--classruns", "-cr", type=int, nargs="?", default=10, help="Sets the number of classification runs.")
 	parser.add_argument("--corpus_name", "-cn", type=str, nargs="?", default="prose", help="Indicates the name of the corpus for the output file.")
 	parser.add_argument("--max_features", "-mf", type=int, default=2000, help="Indicates the number of most frequent words.")
 	parser.add_argument("--ngram", "-ng", type=int, nargs="*", action="store", default=(1,1), help="Passes the ngram range.")
