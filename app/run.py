@@ -39,7 +39,7 @@ def main():
 		logging.info(f"Max Features: {t[1]}.")
 		logging.info(f"N-grams: {t[2]}.")
 
-		command = f"python classification.py {args.path} -cn {args.corpus_name} -mf {t[1]} -ng {t[2][0]} {t[2][1]} -nj {args.n_jobs} -vm {t[0]}"
+		command = f"python classification.py {args.path} -cr {args.classruns} -cn {args.corpus_name} -mf {t[1]} -ng {t[2][0]} {t[2][1]} -nj {args.n_jobs} -vm {t[0]}"
 		
 		if args.use_tuning:
 			command += " -ut"
@@ -59,6 +59,7 @@ if __name__ == "__main__":
 	
 	parser = argparse.ArgumentParser(prog="run", description="Runs classification script with multiple arguments.")
 	parser.add_argument("path", type=str, help="Path to the corpus.")
+	parser.add_argument("--classruns", "-cr", type=int, default=10, help="Sets the number of classification runs.")
 	parser.add_argument("--corpus_name", "-cn", type=str, nargs="?", default="prose", help="Indicates the name of the corpus for the output file.")
 	parser.add_argument("--experiment", "-e", type=int, default=1, help="Indicates the experiment number.")
 	parser.add_argument("--n_jobs", "-nj", type=int, default=1, help="Indicates the number of processors used for computation.")

@@ -469,7 +469,7 @@ def main():
 			clf_durations["tLR"].append(tlr_duration)
 			logging.info(f"Run-time tLR: {tlr_duration} seconds")
 		
-		
+		"""
 		# ==========================================
 		# Support Vector Machines (without linear) #
 		# ==========================================
@@ -495,7 +495,7 @@ def main():
 			tsvm_st = time.time()
 
 			tsvm_parameters = {"C": [0.0001, 0.001, 0.01, 0.1, 1.0, 2.0, 3.0, 4.0, 5.0, 10.0],
-							   "kernel": ["poly"],#, "rbf", "sigmoid"],
+							   "kernel": ["poly", "rbf", "sigmoid"],
 							   "degree": [1, 2, 3, 4, 5],
 							   "shrinking": [True, False],
 							   "tol": [0.0001, 0.001, 0.01, 0.1]}
@@ -517,7 +517,7 @@ def main():
 			tsvm_duration = float(time.time() - tsvm_st)
 			clf_durations["tSVM"].append(tsvm_duration)
 			logging.info(f"Run-time tSVM: {tsvm_duration} seconds")
-		
+		"""
 
 		# ================
 		# Random Forests #
@@ -551,6 +551,13 @@ def main():
 							  "bootstrap": [True, False],
 							  "n_jobs": [n_jobs]}
 
+			# for representaion and computation in reasonable time
+			trf_parameters = {"n_estimators": [100, 200, 300, 400, 500],
+							  "max_depth": [10, 20, 30, 40],
+							  "min_samples_split": [2, 5, 10],
+							  "min_samples_leaf": [1, 2, 3, 4],
+							  "n_jobs": [n_jobs]}
+
 			trf_grid = GridSearchCV(rf_clf, trf_parameters, cv=cv, scoring="f1_micro")
 			trf_grid.fit(X_train, y_train)
 
@@ -562,7 +569,7 @@ def main():
 			trf_cross_val = np.mean(cross_val_score(trf_clf, X_train, y_train, cv=cv, scoring="f1_micro"))
 			f1_dict["tRF"].append(trf_f1_score)
 			cv_dict["tRF"].append(trf_cross_val)
-			logging.debug(f"tRF best params: {tRF_grid.best_params_}")
+			logging.debug(f"tRF best params: {trf_grid.best_params_}")
 
 			trf_duration = float(time.time() - trf_st)
 			clf_durations["tRF"].append(trf_duration)
