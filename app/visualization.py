@@ -28,17 +28,22 @@ def main():
 				  classruns = 0,
 				  cross_validation = 0,
 				  clf_visualization = True,
-				  output_name = args.path[len(args.directory_name+"clf_tables/"):args.path.find(".csv")])
+				  output_name = args.path[len(args.directoryname+"clf_tables/"):args.path.find(".csv")])
 	else:
-		#TODO: besser machen
-		if args.duration_visualization:
+		# Example filename: "../data/tables/classification_speeches(bow_1_(1, 1)).csv"
+		if args.duration_visualization and not args.filename:
+			corpus_name = ""
 			vectorization_method = ""
 			classruns = 1
 			ngram = (1,1)
 		else:
-			corpus_name = re.findall(r"^[^\(]+", args.path[len(args.directory_name):])
+			if args.filename:
+				filename = args.filename
+			else:
+				filename = args.path
+			corpus_name = re.findall(r"^[^\(]+", filename[len(args.directoryname):])
 			corpus_name = corpus_name[0][len("classification")+1:]
-			parameter_names = args.path[args.path.find(corpus_name)+len(corpus_name)+1:-5].split("_")
+			parameter_names = filename[filename.find(corpus_name)+len(corpus_name)+1:-5].split("_")
 
 			vectorization_method = parameter_names[0]
 			classruns = parameter_names[1]
@@ -53,8 +58,9 @@ def main():
 		visualize(results, 
 				  args.visualization_method,
 				  classruns,
-				  cross_validation = 0, #can't be obtained by visualization.py
+				  cross_validation = args.cross_validation,
 				  ngram=ngram, 
+				  output_name=corpus_name,
 				  save_date=args.save_date,
 				  vectorization_method=vectorization_method)
 	
@@ -64,8 +70,10 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser(prog="visualization", description="Visualization of the classifications.")
 	parser.add_argument("path", type=str, help="Path to the classification results as csv-file.")
 	parser.add_argument("--clf_visualization", "-clf", action="store_true", help="Indicates if specific classifier results should be visualized.")
-	parser.add_argument("--directory_name", "-dm", type=str, default="../data/tables/", help="Name of the directory path.")
+	parser.add_argument("--cross_validation", "-cv", type=int, default=0, help="Indicates the cross_validation value.")
+	parser.add_argument("--directoryname", "-dm", type=str, default="../data/tables/", help="Name of the directory path.")
 	parser.add_argument("--duration_visualization", "-dv", action="store_true", help="Indicates if classifier durations should be visualized.")
+	parser.add_argument("--filename", "-fn", type=str, help="Special filename for information extraction.")
 	parser.add_argument("--save_date", "-sd", action="store_true", help="Indicates if the creation date of the results should be saved.")
 	parser.add_argument("--visualization_method", "-vm", type=str, default="bar_vertical", help="Indicates the Visualization Method. Possible values are 'bar_vertical', 'bar_horizontal', 'pie'.")
 	

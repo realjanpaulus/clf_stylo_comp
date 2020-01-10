@@ -469,7 +469,7 @@ def main():
 			clf_durations["tLR"].append(tlr_duration)
 			logging.info(f"Run-time tLR: {tlr_duration} seconds")
 		
-		"""
+		
 		# ==========================================
 		# Support Vector Machines (without linear) #
 		# ==========================================
@@ -517,7 +517,7 @@ def main():
 			tsvm_duration = float(time.time() - tsvm_st)
 			clf_durations["tSVM"].append(tsvm_duration)
 			logging.info(f"Run-time tSVM: {tsvm_duration} seconds")
-		"""
+		
 
 		# ================
 		# Random Forests #
