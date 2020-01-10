@@ -27,10 +27,11 @@ from typing import Dict, List, Optional, Tuple, Union
 # adjustable parameter #
 # ======================
 
-fontsize_vertical = 3
+fontsize_vertical = 2
 fontsize_horizontal = 6
 scaling_l_r = 0.01 # scaling factor for f1-scores on the bars of the classification histogram figures
 scaling_t_b = 0.04 # top-bottom: smaller = more downwards
+scaling_t_b_small = 0.01
 
 # =========================
 # preprocessing functions #
@@ -233,7 +234,7 @@ def vertical_hist(results: pd.DataFrame,
 						  edgecolor="black")
 	for p in ax.patches: 
 		ax.annotate(np.round(p.get_height(), decimals=2), 
-					(p.get_x()+(p.get_width()/2.)+scaling_l_r, p.get_height()),
+					(p.get_x()+(p.get_width()/2.)+scaling_l_r, p.get_height()-scaling_t_b_small),
 					 ha='center', 
 					 va='center', 
 					 xytext=(0, 10), 
@@ -269,18 +270,25 @@ def pie(results: pd.DataFrame,
 	
 	plt.cla()
 	plt.figure(figsize=(6,4))
+
+	blue = ["#004c6d", "#3d708f", "#5383a1", "#7faac6", "#94bed9", "#c1e7ff"]
+	purple = ["#665191", "#8772ac", "#9782b9", "#b8a5d5", "#c9b7e3", "#ebdcff"]
+	pink = ["#d45087", "#e070a1", "#e57fad", "#f09dc5", "#f5abd1", "#ffc8e7"]
+	orange = ["#ff7c43", "#ff935b", "#ff9e67", "#ffb382", "#ffbd90", "#ffd0ae"]
+	
+	colors = [color for t in zip(blue, purple, pink, orange) for color in t] 
+
+	"""
 	blue = ["#004c6d", "#255e7e", "#3d708f", "#5383a1", "#6996b3", "#7faac6", "#94bed9", "#abd2ec", "#c1e7ff"]
 	purple = ["#665191", "#76619e", "#8772ac", "#9782b9", "#a794c7", "#b8a5d5", "#c9b7e3", "#dac9f1", "#ebdcff"]
 	pink = ["#d45087", "#da6194", "#e070a1", "#e57fad", "#ea8eb9", "#f09dc5", "#f5abd1", "#fabadc", "#ffc8e7"]
 	orange = ["#ff7c43", "#ff884f", "#ff935b", "#ff9e67", "#ffa974", "#ffb382", "#ffbd90", "#ffc69f", "#ffd0ae"]
 	
-	#TODO: besser auswählen
-	colors = blue + purple #+ pink + orange
-	"""
 	colors = ["#665191", "#ffa999", "#8eca98", 
 			  "#003f5c", "#007885", "#ffa600",
 			  "#003f5c", "#2f4b7c", "#a05195",
-			  "#d45087", "#f95d6a", "#ff7c43"]"""
+			  "#d45087", "#f95d6a", "#ff7c43"]
+	""" 
 
 	results["percentage"] = results.durations / results.durations.sum()
 
@@ -297,7 +305,7 @@ def pie(results: pd.DataFrame,
 			radius=1.,
 			pctdistance=0.9, 
 			labeldistance=1.1,
-			colors=colors[::-1],
+			colors=colors,
 			textprops={'fontsize': 7})
 	title_text = r"\ Duration\ of\ " + f"{output_name}" + r"\ corpus"
 	bold_title = r"$\bf{" + title_text + "}$ \n"
@@ -308,7 +316,7 @@ def pie(results: pd.DataFrame,
 		figure_name = f"pie_{output_name}({vectorization_method}_{classruns}_{ngram}) ({datetime.now():%d.%m.%y}_{datetime.now():%H:%M})"
 	else:
 		figure_name = f"pie_{output_name}({vectorization_method}_{classruns}_{ngram})"
-	plt.savefig(f'../data/figures/durations/{figure_name}.png', dpi=300, bbox_inches='tight')
+	plt.savefig(f'../data/figures/durations/{figure_name}.png', dpi=900, bbox_inches='tight')
 
 def visualize(results: pd.DataFrame, 
 			  visualization_method: str,
@@ -341,7 +349,6 @@ def visualize(results: pd.DataFrame,
 			pie(results, 
 				classruns=0,
 	  		  	cross_validation = 0,
-				#clf_visualization = True, 
 				ngram=ngram, 
 				output_name=output_name,
 				save_date=save_date)
