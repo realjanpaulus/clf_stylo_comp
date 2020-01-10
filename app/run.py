@@ -25,10 +25,15 @@ def main():
 	# ==================================================
 	# Experiment 1: all classifications duration test  #
 	# ==================================================
-	if args.experiment == 1:
-		logging.info("Starting experiment 1: all classifications duration test.")
+	if args.experiment == 0:
+		logging.info("Starting experiment 0: all classifications duration test.")
 		vectorization_methods = ["bow"]
 		max_features = [1000]
+		n_grams = [(1,1)]
+	elif args.experiment == 1:
+		logging.info("Starting experiment 1: most classifications with 500f.")
+		vectorization_methods = ["bow", "zscore", "tfidf", "cos"]
+		max_features = [500]
 		n_grams = [(1,1)]
 
 	cartesian_inputs = list(product(vectorization_methods, max_features, n_grams))

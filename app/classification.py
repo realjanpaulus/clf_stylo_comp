@@ -469,7 +469,7 @@ def main():
 			clf_durations["tLR"].append(tlr_duration)
 			logging.info(f"Run-time tLR: {tlr_duration} seconds")
 		
-		
+		"""
 		# ==========================================
 		# Support Vector Machines (without linear) #
 		# ==========================================
@@ -574,7 +574,7 @@ def main():
 			trf_duration = float(time.time() - trf_st)
 			clf_durations["tRF"].append(trf_duration)
 			logging.info(f"Run-time tRF: {trf_duration} seconds")
-		
+	"""	
 	
 	# ================
 	# Saving results #

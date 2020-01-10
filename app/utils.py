@@ -74,6 +74,7 @@ def remove_columnname_from_text(df: pd.DataFrame, column_name: str) -> pd.DataFr
 		return df
 
 def split_texts_into_segments(corpus: pd.DataFrame,
+							  corpus_type: Optional[str] = "prose",
 							  n: Optional[int] = 10000,
 							  same_len: Optional[bool] = False) -> pd.DataFrame:
 	""" Splits the texts of a corpus into n segments and returns them as a new corpus
@@ -81,36 +82,55 @@ def split_texts_into_segments(corpus: pd.DataFrame,
 		If same_len, segments with lengths smaller than n will be ignored.
 	"""
 	tmp_dict = {}
-	
-	for index, row in corpus.iterrows():
-		chunks = build_chunks(word_tokenize(row["text"]), n)
-		for idx_chunk, chunk in enumerate(chunks):
-			
-			
-			new_filename = row["filename"] + "_" + str(idx_chunk + 1)
-			new_title = row["title"] + "_" + str(idx_chunk + 1)
-			new_textlength = len(chunk)
-			if same_len:
-				if new_textlength == n:
+	new_corpus = None
+	if corpus_type == "prose":
+		for index, row in corpus.iterrows():
+			chunks = build_chunks(word_tokenize(row["text"]), n)
+			for idx_chunk, chunk in enumerate(chunks):
+				
+				new_filename = row["filename"] + "_" + str(idx_chunk + 1)
+				new_title = row["title"] + "_" + str(idx_chunk + 1)
+				new_textlength = len(chunk)
+				if same_len:
+					if new_textlength == n:
+						new_text = " ".join(chunk)
+						tmp_dict[new_filename] = {"author" : row["author"],
+												  "title" : new_title,
+												  "year" : row["year"],
+												  "textlength" : new_textlength,
+												  "text" : new_text}
+				else:
 					new_text = " ".join(chunk)
 					tmp_dict[new_filename] = {"author" : row["author"],
 											  "title" : new_title,
 											  "year" : row["year"],
 											  "textlength" : new_textlength,
-											  "text" : new_text
-											  }
-			else:
-				new_text = " ".join(chunk)
-				tmp_dict[new_filename] = {"author" : row["author"],
-										  "title" : new_title,
-										  "year" : row["year"],
-										  "textlength" : new_textlength,
-										  "text" : new_text
-										  }
-	
-	new_corpus = pd.DataFrame.from_dict(tmp_dict, orient="index").reset_index()
-	new_corpus.columns = ["filename", "author", "title", 
-						  "year", "textlength", "text"]
+											  "text" : new_text}
+		
+		new_corpus = pd.DataFrame.from_dict(tmp_dict, orient="index").reset_index()
+		new_corpus.columns = ["filename", "author", "title", "year", "textlength", "text"]
+
+	elif corpus_type == "speeches":
+		for index, row in corpus.iterrows():
+			chunks = build_chunks(word_tokenize(row["text"]), n)
+			for idx_chunk, chunk in enumerate(chunks):
+				new_title = row["title"] + "_" + str(idx_chunk + 1)
+				new_textlength = len(chunk)
+				if same_len:
+					if new_textlength == n:
+						new_text = " ".join(chunk)
+						tmp_dict[new_title] = {"author" : row["author"],
+											   "textlength" : new_textlength,
+											   "text" : new_text}
+				else:
+					new_text = " ".join(chunk)
+					tmp_dict[new_title] = {"author" : row["author"],
+										   "textlength" : new_textlength,
+										   "text" : new_text}
+		
+		new_corpus = pd.DataFrame.from_dict(tmp_dict, orient="index").reset_index()
+		new_corpus.columns = ["title", "author", "textlength", "text"]
+
 	return new_corpus
 
 def unify_texts_amount(df: pd.DataFrame,
