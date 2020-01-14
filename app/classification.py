@@ -59,7 +59,7 @@ def main():
 	# ================================
 	# classification logging handler #
 	# ================================
-	logging_filename = f"../logs/classification_{args.vectorization_method}_{args.max_features}_{ngrams}.log"
+	logging_filename = f"../logs/classification_{args.corpus_name}({args.vectorization_method}_{args.max_features}_{ngrams}).log"
 	logging.basicConfig(level=logging.DEBUG, filename=logging_filename, filemode="w")
 	console = logging.StreamHandler()
 	console.setLevel(logging.INFO)
@@ -142,7 +142,7 @@ def main():
 		knn_y_pred = knn_model.predict(X_test)
 		knn_f1_score = f1_score(y_test, knn_y_pred, average="micro")
 		knn_cross_val = np.mean(cross_val_score(knn_clf, X_train, y_train, cv=cv, scoring="f1_micro"))
-		if args.vectorization_method == "zscore":
+		if args.vectorization_method == "zscore" or args.vectorization_method == "cos":
 			f1_dict["D-KNN"].append(knn_f1_score)
 			cv_dict["D-KNN"].append(knn_cross_val)
 
@@ -179,7 +179,7 @@ def main():
 			tknn_y_pred = tknn_model.predict(X_test)
 			tknn_f1_score = f1_score(y_test, tknn_y_pred, average="micro")
 			tknn_cross_val = np.mean(cross_val_score(tknn_clf, X_train, y_train, cv=cv, scoring="f1_micro"))
-			if args.vectorization_method == "zscore":
+			if args.vectorization_method == "zscore" or args.vectorization_method == "cos":
 				f1_dict["D-tKNN"].append(tknn_f1_score)
 				cv_dict["D-tKNN"].append(tknn_cross_val)
 				logging.debug(f"D-tKNN best params: {tknn_grid.best_params_}")
@@ -196,70 +196,7 @@ def main():
 				clf_durations["tKNN"].append(tknn_duration)
 				logging.info(f"Run-time tKNN: {tknn_duration} seconds")
 
-		# =============================================================
-		# Radius Neighbors (+ z-scores = Burrows Delta 2) #
-		# =============================================================
 		
-		rn_st = time.time()
-
-		rn_clf = RadiusNeighborsClassifier(outlier_label = "most_frequent")
-		rn_model = rn_clf.fit(X_train, y_train)
-		rn_y_pred = rn_model.predict(X_test)
-		rn_f1_score = f1_score(y_test, rn_y_pred, average="micro")
-		rn_cross_val = np.mean(cross_val_score(rn_clf, X_train, y_train, cv=cv, scoring="f1_micro"))
-		if args.vectorization_method == "zscore":
-			f1_dict["D-RN"].append(rn_f1_score)
-			cv_dict["D-RN"].append(rn_cross_val)
-
-			rn_duration = float(time.time() - rn_st)
-			clf_durations["D-RN"].append(rn_duration)
-			logging.info(f"Run-time D-RN: {rn_duration} seconds")
-		else:
-			f1_dict["RN"].append(rn_f1_score)
-			cv_dict["RN"].append(rn_cross_val)
-
-			rn_duration = float(time.time() - rn_st)
-			clf_durations["RN"].append(rn_duration)
-			logging.info(f"Run-time RN: {rn_duration} seconds")
-
-		# Hyperparameter optimization #
-		
-		if args.use_tuning:
-
-			trn_st = time.time()
-
-			trn_parameters = {"radius": [0.0001, 0.001, 0.01, 0.1, 0.5, 1.0, 2.0],
-							  "weights": ["uniform", "distance"],
-							  "algorithm": ["brute"],
-							  "leaf_size": [1, 2, 3, 4, 5],
-							  "p": [1, 2],
-							  "outlier_label": ["most_frequent"],
-							  "n_jobs": [n_jobs]}
-
-			trn_grid = GridSearchCV(rn_clf, trn_parameters, cv=cv, scoring="f1_micro")
-			trn_grid.fit(X_train, y_train)
-			
-			trn_clf = RadiusNeighborsClassifier(**trn_grid.best_params_)
-			trn_model = trn_clf.fit(X_train, y_train)
-			trn_y_pred = trn_model.predict(X_test)
-			trn_f1_score = f1_score(y_test, trn_y_pred, average="micro")
-			trn_cross_val = np.mean(cross_val_score(trn_clf, X_train, y_train, cv=cv, scoring="f1_micro"))
-			if args.vectorization_method == "zscore":
-				f1_dict["D-tRN"].append(trn_f1_score)
-				cv_dict["D-tRN"].append(trn_cross_val)
-				logging.debug(f"D-tRN best params: {trn_grid.best_params_}")
-
-				trn_duration = float(time.time() - trn_st)
-				clf_durations["D-tRN"].append(trn_duration)
-				logging.info(f"Run-time D-tRN: {trn_duration} seconds")
-			else:
-				f1_dict["tRN"].append(trn_f1_score)
-				cv_dict["tRN"].append(trn_cross_val)
-				logging.debug(f"tRN best params: {trn_grid.best_params_}")
-
-				trn_duration = float(time.time() - trn_st)
-				clf_durations["tRN"].append(trn_duration)
-				logging.info(f"Run-time tRN: {trn_duration} seconds")
 		
 		# =============================================================
 		# Nearest (shrunken) Centroids (+ z-scores = Burrows Delta 3) #
@@ -294,6 +231,7 @@ def main():
 			tnsc_st = time.time()
 			tnsc_parameters = {"metric": ['euclidean', 'manhattan'],
 							   "shrink_threshold": [None]}
+
 			# metric: 'euclidean' and 'manhattan' only avaible metrics for sparse input
 			# shrink_threshold: is not supported for sparse input
 
@@ -470,6 +408,72 @@ def main():
 			logging.info(f"Run-time tLR: {tlr_duration} seconds")
 		
 		"""
+		# =============================================================
+		# Radius Neighbors (+ z-scores = Burrows Delta 2) #
+		# =============================================================
+		
+		rn_st = time.time()
+
+		rn_clf = RadiusNeighborsClassifier(outlier_label = "most_frequent")
+		rn_model = rn_clf.fit(X_train, y_train)
+		rn_y_pred = rn_model.predict(X_test)
+		rn_f1_score = f1_score(y_test, rn_y_pred, average="micro")
+		rn_cross_val = np.mean(cross_val_score(rn_clf, X_train, y_train, cv=cv, scoring="f1_micro"))
+		if args.vectorization_method == "zscore" or args.vectorization_method == "cos":
+			f1_dict["D-RN"].append(rn_f1_score)
+			cv_dict["D-RN"].append(rn_cross_val)
+
+			rn_duration = float(time.time() - rn_st)
+			clf_durations["D-RN"].append(rn_duration)
+			logging.info(f"Run-time D-RN: {rn_duration} seconds")
+		else:
+			f1_dict["RN"].append(rn_f1_score)
+			cv_dict["RN"].append(rn_cross_val)
+
+			rn_duration = float(time.time() - rn_st)
+			clf_durations["RN"].append(rn_duration)
+			logging.info(f"Run-time RN: {rn_duration} seconds")
+
+		# Hyperparameter optimization #
+		
+		if args.use_tuning:
+
+			trn_st = time.time()
+
+			trn_parameters = {"radius": [0.0001, 0.001, 0.01, 0.1, 0.5, 1.0, 2.0],
+							  "weights": ["uniform", "distance"],
+							  "algorithm": ["brute"],
+							  "leaf_size": [1, 2, 3, 4, 5],
+							  "p": [1, 2],
+							  "outlier_label": ["most_frequent"],
+							  "n_jobs": [n_jobs]}
+
+			trn_grid = GridSearchCV(rn_clf, trn_parameters, cv=cv, scoring="f1_micro")
+			trn_grid.fit(X_train, y_train)
+			
+			trn_clf = RadiusNeighborsClassifier(**trn_grid.best_params_)
+			trn_model = trn_clf.fit(X_train, y_train)
+			trn_y_pred = trn_model.predict(X_test)
+			trn_f1_score = f1_score(y_test, trn_y_pred, average="micro")
+			trn_cross_val = np.mean(cross_val_score(trn_clf, X_train, y_train, cv=cv, scoring="f1_micro"))
+			if args.vectorization_method == "zscore":
+				f1_dict["D-tRN"].append(trn_f1_score)
+				cv_dict["D-tRN"].append(trn_cross_val)
+				logging.debug(f"D-tRN best params: {trn_grid.best_params_}")
+
+				trn_duration = float(time.time() - trn_st)
+				clf_durations["D-tRN"].append(trn_duration)
+				logging.info(f"Run-time D-tRN: {trn_duration} seconds")
+			else:
+				f1_dict["tRN"].append(trn_f1_score)
+				cv_dict["tRN"].append(trn_cross_val)
+				logging.debug(f"tRN best params: {trn_grid.best_params_}")
+
+				trn_duration = float(time.time() - trn_st)
+				clf_durations["tRN"].append(trn_duration)
+				logging.info(f"Run-time tRN: {trn_duration} seconds")
+		
+		
 		# ==========================================
 		# Support Vector Machines (without linear) #
 		# ==========================================
@@ -590,9 +594,9 @@ def main():
 
 	
 	if args.save_date:
-		csv_name = f"classification_{args.corpus_name}({args.vectorization_method}_{classruns}_{ngrams})_({datetime.now():%d.%m.%y}_{datetime.now():%H:%M})"
+		csv_name = f"classification_{args.corpus_name}({args.vectorization_method}_{classruns}_{args.max_features}_{ngrams})_({datetime.now():%d.%m.%y}_{datetime.now():%H:%M})"
 	else:
-		csv_name = f"classification_{args.corpus_name}({args.vectorization_method}_{classruns}_{ngrams})"
+		csv_name = f"classification_{args.corpus_name}({args.vectorization_method}_{classruns}_{args.max_features}_{ngrams})"
 	results.to_csv(f"../data/tables/{csv_name}.csv")
 
 	if args.visualization:
@@ -600,6 +604,7 @@ def main():
 		visualize(results,
 			  	  "bar_vertical",
 			  	  classruns,
+			  	  max_features=args.max_features,
 			  	  cross_validation=cv,
 			  	  ngram=ngrams,
 			  	  output_name=args.corpus_name, 
@@ -620,9 +625,9 @@ def main():
 
 
 	if args.save_date:
-		duration_name = f"clf_durations_({datetime.now():%d.%m.%y}_{datetime.now():%H:%M})"
+		duration_name = f"clf_durations_{args.corpus_name}({args.vectorization_method}_{classruns}_{args.max_features}_{ngrams})_({datetime.now():%d.%m.%y}_{datetime.now():%H:%M})"
 	else:
-		duration_name = "clf_durations"
+		duration_name = f"clf_durations_{args.corpus_name}({args.vectorization_method}_{classruns}_{args.max_features}_{ngrams}"
 	clf_durations_df.to_csv(f"../data/tables/{duration_name}.csv")
 
 	
@@ -630,6 +635,7 @@ def main():
 		logging.info(r"Saving figure of classification durations to data/figures/durations/")
 		visualize(clf_durations_df,
 			  	  "pie",
+			  	  max_features=args.max_features,
 			  	  classruns=classruns,
 			  	  cross_validation=cv,
 			  	  ngram=ngrams, 

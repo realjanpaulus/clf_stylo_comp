@@ -21,49 +21,66 @@ def main():
 	logging.info("Reading csv.")
 	results = pd.read_csv(args.path, index_col=0)
 	logging.info("Plotting graph.")
+
+	#TODO: überprüfen, auch max_features
 	if args.clf_visualization:
 		results.set_index("clf", inplace=True)
 		visualize(results, 
 				  args.visualization_method,
 				  classruns = 0,
 				  cross_validation = 0,
+				  max_features = "",
 				  clf_visualization = True,
 				  output_name = args.path[len(args.directoryname+"clf_tables/"):args.path.find(".csv")])
 	else:
 		# Example filename: "../data/tables/classification_speeches(bow_1_(1, 1)).csv"
-		if args.duration_visualization and not args.filename:
-			corpus_name = ""
-			vectorization_method = ""
-			classruns = 1
-			ngram = (1,1)
+		if args.filename:
+			filename = args.filename
 		else:
-			if args.filename:
-				filename = args.filename
-			else:
-				filename = args.path
-			corpus_name = re.findall(r"^[^\(]+", filename[len(args.directoryname):])
-			corpus_name = corpus_name[0][len("classification")+1:]
-			parameter_names = filename[filename.find(corpus_name)+len(corpus_name)+1:-5].split("_")
+			filename = args.path
 
-			vectorization_method = parameter_names[0]
-			classruns = parameter_names[1]
-			ngram = parameter_names[2]
 		
-		visualization_methods = ["bar_vertical", 
-								 "bar_horizontal",
-								 "pie"]
-		if args.visualization_method not in visualization_methods:
+		"""
+		if args.duration_visualization and not filename:
+			logging.info("No specific filename is given. Empty Parameter names will be used.")
+			vectorization_method = ""
+			classruns = 0
+			max_features = 0
+			ngram = (1,1)"""
+
+		if args.duration_visualization:
+			pre = "clf_durations"
+			visualization_method = "pie"
+		else:
+			pre = "classification"
+			visualization_method = args.visualization_method
+
+		corpus_name = re.findall(r"^[^\(]+", filename[len(args.directoryname):])
+		corpus_name = corpus_name[0][len(pre)+1:]
+		parameter_names = filename[filename.find(corpus_name)+len(corpus_name)+1:-5].split("_")
+
+
+		vectorization_method = parameter_names[0]
+		classruns = parameter_names[1]
+		max_features = parameter_names[2]
+		ngram = parameter_names[3]
+		if ngram[-2:] == "))":
+			ngram = parameter_names[3][:-1]
+		
+		visualization_methods = ["bar_vertical", "bar_horizontal", "pie"]
+		if visualization_method not in visualization_methods:
 			logging.info(f"The visualization method '{visualization_method}' isn't available. The available visualization methods are: {visualization_methods}.")
 			sys.exit()
-		visualize(results, 
-				  args.visualization_method,
-				  classruns,
+		visualize(results=results, 
+				  visualization_method=visualization_method,
+				  classruns=classruns,
 				  cross_validation = args.cross_validation,
+				  max_features=max_features,
 				  ngram=ngram, 
 				  output_name=corpus_name,
 				  save_date=args.save_date,
 				  vectorization_method=vectorization_method)
-	
+
 
 if __name__ == "__main__":
 	

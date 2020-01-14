@@ -22,12 +22,13 @@ from typing import Dict, List, Optional, Tuple, Union
 # experiment helper functions
 # visualization helper functions
 # analysis helper functions
+# keras helper functions
 
 # ======================
 # adjustable parameter #
 # ======================
 
-fontsize_vertical = 2
+fontsize_vertical = 3
 fontsize_horizontal = 6
 scaling_l_r = 0.01 # scaling factor for f1-scores on the bars of the classification histogram figures
 scaling_t_b = 0.04 # top-bottom: smaller = more downwards
@@ -202,7 +203,8 @@ def z_score(x: int) -> float:
 
 def horizontal_hist(results: pd.DataFrame, 
 					classruns: int,
-				  	cross_validation = int,
+					cross_validation: int,
+					max_features: str,
 					clf_visualization: Optional[bool] = False,
 					ngram: Optional[Tuple[int, int]] = (1,1), 
 					output_name: Optional[str] = "", 
@@ -235,14 +237,15 @@ def horizontal_hist(results: pd.DataFrame,
 		plt.title(f" Corpus: {output_name}\n Weighting: {vectorization_method} \n N-grams: {str(ngram)} \n Train-test iterations: {classruns} \n Cross-Validation: {cross_validation}", loc="left")
 
 		if save_date:
-			figure_name = f"results_barh_{output_name}({vectorization_method}_{classruns}_{ngram}) ({datetime.now():%d.%m.%y}_{datetime.now():%H:%M})"
+			figure_name = f"results_barh_{output_name}({vectorization_method}_{classruns}_{max_features}_{ngram}) ({datetime.now():%d.%m.%y}_{datetime.now():%H:%M})"
 		else:
-			figure_name = f"results_barh_{output_name}({vectorization_method}_{classruns}_{ngram})"
+			figure_name = f"results_barh_{output_name}({vectorization_method}_{classruns}_{max_features}_{ngram})"
 		plt.savefig(f'../data/figures/results/{figure_name}.png', dpi=300, bbox_inches='tight')
 
 def vertical_hist(results: pd.DataFrame, 
 				  classruns: int,
-				  cross_validation = int,
+				  cross_validation: int,
+				  max_features: str,
 				  clf_visualization: Optional[bool] = False,
 				  ngram: Optional[Tuple[int, int]] = (1,1),
 				  output_name: Optional[str] = "",
@@ -275,16 +278,17 @@ def vertical_hist(results: pd.DataFrame,
 		plt.title(f" Corpus: {output_name}\n Weighting: {vectorization_method} \n N-grams: {str(ngram)} \n Train-test iterations: {classruns} \n Cross-Validation: {cross_validation}", loc="left")
 
 		if save_date:
-			figure_name = f"results_bar_{output_name}({vectorization_method}_{classruns}_{ngram}) ({datetime.now():%d.%m.%y}_{datetime.now():%H:%M})"
+			figure_name = f"results_bar_{output_name}({vectorization_method}_{classruns}_{max_features}_{ngram}) ({datetime.now():%d.%m.%y}_{datetime.now():%H:%M})"
 		else:
-			figure_name = f"results_bar_{output_name}({vectorization_method}_{classruns}_{ngram})"
+			figure_name = f"results_bar_{output_name}({vectorization_method}_{classruns}_{max_features}_{ngram})"
 		plt.savefig(f'../data/figures/results/{figure_name}.png', dpi=300, bbox_inches='tight')
 
 def pie(results: pd.DataFrame,
 		classruns: int,
-		cross_validation = int,
-	  	ngram: Optional[Tuple[int, int]] = (1,1),
-	  	output_name: Optional[str] = "",
+		cross_validation: int,
+		max_features: str, 
+		ngram: Optional[Tuple[int, int]] = (1,1),
+		output_name: Optional[str] = "",
 		save_date: Optional[bool] = False,
 		vectorization_method: Optional[str] = ""):
 	
@@ -333,9 +337,9 @@ def pie(results: pd.DataFrame,
 			  loc="left",
 			  fontsize=7)
 	if save_date:
-		figure_name = f"pie_{output_name}({vectorization_method}_{classruns}_{ngram}) ({datetime.now():%d.%m.%y}_{datetime.now():%H:%M})"
+		figure_name = f"pie_{output_name}({vectorization_method}_{classruns}_{max_features}_{ngram}) ({datetime.now():%d.%m.%y}_{datetime.now():%H:%M})"
 	else:
-		figure_name = f"pie_{output_name}({vectorization_method}_{classruns}_{ngram})"
+		figure_name = f"pie_{output_name}({vectorization_method}_{classruns}_{max_features}_{ngram})"
 	plt.savefig(f'../data/figures/durations/{figure_name}.png', dpi=900, bbox_inches='tight')
 
 def visualize(results: pd.DataFrame, 
@@ -343,6 +347,7 @@ def visualize(results: pd.DataFrame,
 			  classruns: int,
 			  cross_validation = int,
 			  clf_visualization: Optional[bool] = False,
+			  max_features: Optional[str] = "",
 			  ngram: Optional[Tuple[int, int]] = (1,1),
 			  output_name: Optional[str] = "",
 			  save_date: Optional[bool] = False,
@@ -351,24 +356,27 @@ def visualize(results: pd.DataFrame,
 	if clf_visualization:
 		if visualization_method == "bar_vertical":
 			vertical_hist(results, 
-					  	  classruns=0, 
-				  		  cross_validation = 0,
-					  	  clf_visualization = True,
+						  classruns=0, 
+						  cross_validation = 0,
+						  clf_visualization = True,
+						  max_features=max_features,
 						  ngram=ngram, 
 						  output_name=output_name,
 						  save_date=save_date)
 		elif visualization_method == "bar_horizontal":
 			horizontal_hist(results, 
 							classruns=0,
-				  		  	cross_validation = 0,
-							clf_visualization = True, 
+							cross_validation = 0,
+							clf_visualization = True,
+							max_features=max_features, 
 							ngram=ngram, 
 							output_name=output_name,
 							save_date=save_date)
 		elif visualization_method == "pie":
 			pie(results, 
 				classruns=0,
-	  		  	cross_validation = 0,
+				cross_validation = 0,
+				max_features=max_features,
 				ngram=ngram, 
 				output_name=output_name,
 				save_date=save_date)
@@ -384,16 +392,18 @@ def visualize(results: pd.DataFrame,
 		
 		if visualization_method == "bar_vertical":
 			vertical_hist(results, 
-					  	  classruns,
-				  		  cross_validation = cross_validation,
+						  classruns,
+						  max_features=max_features, 
+						  cross_validation = cross_validation,
 						  ngram=ngram, 
 						  output_name=output_name,
 						  save_date=save_date,
 						  vectorization_method=vectorization_methods[vectorization_method])
 		elif visualization_method == "bar_horizontal":
 			horizontal_hist(results, 
-							classruns, 
-				  		  	cross_validation = cross_validation,
+							classruns,
+							max_features=max_features,  
+							cross_validation = cross_validation,
 							ngram=ngram, 
 							output_name=output_name,
 							save_date=save_date,
@@ -401,7 +411,8 @@ def visualize(results: pd.DataFrame,
 		elif visualization_method == "pie":
 			pie(results,
 				classruns,
-	  		  	cross_validation = cross_validation,
+				max_features=max_features, 
+				cross_validation = cross_validation,
 				ngram=ngram, 
 				output_name=output_name,
 				save_date=save_date,
@@ -410,34 +421,65 @@ def visualize(results: pd.DataFrame,
 
 # ===========================
 # analysis helper functions #
-# ============================
+# ===========================
 
 def concat_tables(dir_path: str, 
-                  corpus_name: Optional[str] = "prose",
-                  save_date: Optional[bool] = True) -> pd.DataFrame:
-    
-    all_files = glob.glob(dir_path + "/*.csv")
-    all_tables = {}
+				  corpus_name: Optional[str] = "prose",
+				  save_date: Optional[bool] = True) -> pd.DataFrame:
+	
+	all_files = glob.glob(dir_path + "/*.csv")
+	all_tables = {}
 
-    for filename in all_files:
-        if corpus_name in filename:
-            table = pd.read_csv(filename, index_col=None, header=0)
+	for filename in all_files:
+		if corpus_name in filename:
+			table = pd.read_csv(filename, index_col=None, header=0)
 
-            if save_date:
-                subtract = 17
-            else:
-                subtract = 0
-            name_addition = filename[filename.find(corpus_name)+len(corpus_name)+1:filename.find(").csv")-subtract]
-            table.columns = ["clf", "f1", "cv"]
-            table["clf"] = table["clf"].astype(str) + ": " + name_addition
-            all_tables[name_addition] = table
-    return pd.concat(all_tables.values(), axis=0, ignore_index=True)
+			if save_date:
+				subtract = 17
+			else:
+				subtract = 0
+			name_addition = filename[filename.find(corpus_name)+len(corpus_name)+1:filename.find(").csv")-subtract]
+			table.columns = ["clf", "f1", "cv"]
+			table["clf"] = table["clf"].astype(str) + ": " + name_addition
+			all_tables[name_addition] = table
+	return pd.concat(all_tables.values(), axis=0, ignore_index=True)
 
 def split_tables_by_clf(table: pd.DataFrame, 
-                        saving_dir_path: str):
-    classifiers = ["KNN", "NSC", "MNB", "LR", "LSVM"]
-    
-    for clf in classifiers:
-        clf_table = table[table.clf.str.contains(clf)]
-        clf_table.to_csv(saving_dir_path+clf+".csv", index=False)
+						saving_dir_path: str):
+	classifiers = ["KNN", "NSC", "MNB", "LR", "LSVM"]
+	
+	for clf in classifiers:
+		clf_table = table[table.clf.str.contains(clf)]
+		clf_table.to_csv(saving_dir_path+clf+".csv", index=False)
 
+
+# ========================
+# keras helper functions #
+# ========================
+
+def plot_results(history):
+	loss = history.history["loss"]
+	val_loss = history.history["val_loss"]
+	epochs = range(1, len(loss) + 1)
+
+	plt.plot(epochs, loss, "b", label="Training loss")
+	plt.plot(epochs, val_loss, "ro", label="Validation loss")
+	plt.title("Training and validation loss")
+	plt.xlabel("Epochs")
+	plt.ylabel("Loss")
+	plt.legend()
+	plt.show()
+
+	plt.clf() #clears the figure
+
+	acc = history.history["acc"]
+	val_acc = history.history["val_acc"]
+
+	plt.plot(epochs, acc, "b", label="Training acc")
+	plt.plot(epochs, val_acc, "ro", label="Validation acc")
+	plt.title("Training and validation accuracy")
+	plt.xlabel("Epochs")
+	plt.ylabel("Acc")
+	plt.legend()
+
+	plt.show()

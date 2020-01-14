@@ -11,7 +11,9 @@ def main():
 
 	### run logging handler ###
 
-	logging.basicConfig(level=logging.DEBUG, filename="../logs/run.log", filemode="w")
+	logging.basicConfig(level=logging.DEBUG, 
+						filename=f"../logs/run_{args.corpus_name}_e{args.experiment}.log", 
+						filemode="w")
 	console = logging.StreamHandler()
 	console.setLevel(logging.INFO)
 	formatter = logging.Formatter("%(levelname)s: %(message)s")
@@ -19,22 +21,38 @@ def main():
 	logging.getLogger('').addHandler(console)
 	
 	vectorization_methods = ["bow", "zscore", "tfidf", "cos"]
-	max_features = [500, 1000, 2000, 3000]
+	max_features = [200, 300, 500, 1000, 2000, 3000]
 	n_grams = [(1,1), (1,2), (2,2)]
 
 	# ==================================================
 	# Experiment 1: all classifications duration test  #
 	# ==================================================
 	if args.experiment == 0:
-		logging.info("Starting experiment 0: all classifications duration test.")
+		logging.info("Starting experiment 0: all classifier duration test.")
 		vectorization_methods = ["bow"]
 		max_features = [1000]
 		n_grams = [(1,1)]
 	elif args.experiment == 1:
-		logging.info("Starting experiment 1: most classifications with 500f.")
-		vectorization_methods = ["bow", "zscore", "tfidf", "cos"]
-		max_features = [500]
+		logging.info("Starting experiment 1: different mfw for bow.")
+		vectorization_methods = ["bow"]
+		max_features = [200, 300, 500, 1000, 2000, 3000]
 		n_grams = [(1,1)]
+	elif args.experiment == 2:
+		logging.info("Starting experiment 2: different mfw for zscore.")
+		vectorization_methods = ["zscore"]
+		max_features = [200, 300, 500, 1000, 2000, 3000]
+		n_grams = [(1,1)]
+	elif args.experiment == 3:
+		logging.info("Starting experiment 3: different mfw for tfidf")
+		vectorization_methods = ["tfidf"]
+		max_features = [200, 300, 500, 1000, 2000, 3000]
+		n_grams = [(1,1)]
+	elif args.experiment == 4:
+		logging.info("Starting experiment 3: different mfw for cosine.")
+		vectorization_methods = ["cos"]
+		max_features = [200, 300, 500, 1000, 2000, 3000]
+		n_grams = [(1,1)]
+
 
 	cartesian_inputs = list(product(vectorization_methods, max_features, n_grams))
 	for idx, t in enumerate(cartesian_inputs):
@@ -58,8 +76,7 @@ def main():
 	program_duration = float(time.time() - program_st)
 	logging.info(f"Overall run-time: {int(program_duration)/60} minute(s).")
 	
-
-
+	
 if __name__ == "__main__":
 	
 	parser = argparse.ArgumentParser(prog="run", description="Runs classification script with multiple arguments.")
