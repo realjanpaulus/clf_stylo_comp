@@ -1,9 +1,3 @@
-,f1,cv
-D-KNN,0.806,0.583
-D-tKNN,0.937,0.844
-D-NSC,0.878,0.785
-D-tNSC,0.895,0.808
-LSVM,0.999,0.986
-tLSVM,0.999,0.987
-LR,0.999,0.987
-tLR,0.912,0.74
+version https://git-lfs.github.com/spec/v1
+oid sha256:5ef4185a96078f63c885f2003ebbaa59a6a5536935a9c6671e6c99b93aa8cf62
+size 146
