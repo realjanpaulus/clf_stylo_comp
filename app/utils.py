@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from datetime import datetime
 import glob
+import io
 from nltk import word_tokenize
 import matplotlib.pyplot as plt
 plt.rcParams.update({'figure.figsize':(8,6), 
@@ -444,6 +445,30 @@ def concat_tables(dir_path: str,
 			all_tables[name_addition] = table
 	return pd.concat(all_tables.values(), axis=0, ignore_index=True)
 
+def df_to_latex(df, alignment="c"):
+    """ Convert a pandas dataframe to a LaTeX tabular.
+        Prints labels in bold, does not use math mode.
+        Adapted from: https://techoverflow.net/2013/12/08/converting-a-pandas-dataframe-to-a-customized-latex-tabular/.
+    """
+
+    numColumns = df.shape[1]
+    numRows = df.shape[0]
+    output = io.StringIO()
+    colFormat = ("%s|%s" % (alignment, alignment * numColumns))
+    #Write header
+    output.write("\\small\n")
+    output.write("\\begin{tabular}{%s}\n" % colFormat)
+    output.write("\\hline\n")
+    columnLabels = ["\\textbf{%s}" % label for label in df.columns]
+    output.write("& %s\\\\\\hline\n" % " & ".join(columnLabels))
+    #Write data lines
+    for i in range(numRows):
+        output.write("\\textbf{%s} & %s\\\\\n"
+                     % (df.index[i], " & ".join([str(val) for val in df.iloc[i]])))
+    #Write footer
+    output.write("\\end{tabular}")
+    return output.getvalue()
+
 def split_tables_by_clf(table: pd.DataFrame, 
 						saving_dir_path: str):
 	classifiers = ["KNN", "NSC", "MNB", "LR", "LSVM"]
@@ -451,6 +476,37 @@ def split_tables_by_clf(table: pd.DataFrame,
 	for clf in classifiers:
 		clf_table = table[table.clf.str.contains(clf)]
 		clf_table.to_csv(saving_dir_path+clf+".csv", index=False)
+
+
+def summarize_tables(files: List[str],
+                     path: str,
+                     vectorization_method: str) -> dict:
+    """ Summarizes tables of a vectorization method to one table.
+        csv-name has to be something like 'classification_prose(tfidf_10_3000_(1, 1))'.
+    """
+
+    sum_dict = {}
+
+    for idx, filename in enumerate(files):
+        clf_name = filename[len(path):filename.find(".csv")-17]
+        if vectorization_method in clf_name:
+            max_features = clf_name.split("_")[-2] #TODO: better solution?
+            clf_table = pd.read_csv(filename)
+            clf_table.columns = ["clf", "f1", "cv"]
+            clf_table['score'] = clf_table.apply(lambda row: str(np.around(row.f1, decimals=3)) + r" (" + str(np.around(row.cv, decimals=3)) + r")", axis=1)
+            clf_table = clf_table.drop(['f1', 'cv'], axis=1)
+            clf_table.set_index("clf", inplace=True)
+            tmp_dict = clf_table.to_dict("index")
+            clf_dict = {}
+            for k, v in tmp_dict.items():
+                clf_dict[k] = tmp_dict[k]["score"]
+            sum_dict[int(max_features)] = clf_dict
+            
+    return sum_dict
+
+def sum_table_to_df(sum_table: dict) -> pd.DataFrame:
+    df = pd.DataFrame.from_dict(sum_table)
+    return df.reindex(sorted(df.columns), axis=1)
 
 
 # ========================
