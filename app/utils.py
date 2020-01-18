@@ -480,7 +480,8 @@ def split_tables_by_clf(table: pd.DataFrame,
 
 def summarize_tables(files: List[str],
                      path: str,
-                     vectorization_method: str) -> dict:
+                     vectorization_method: str,
+                     drop_not_tuned: Optional[bool] = False) -> dict:
     """ Summarizes tables of a vectorization method to one table.
         csv-name has to be something like 'classification_prose(tfidf_10_3000_(1, 1))'.
     """
@@ -493,6 +494,13 @@ def summarize_tables(files: List[str],
             max_features = clf_name.split("_")[-2] #TODO: better solution?
             clf_table = pd.read_csv(filename)
             clf_table.columns = ["clf", "f1", "cv"]
+
+            if drop_not_tuned:
+            	not_tuned = ["KNN", "D-KNN", "NSC", "D-NSC", "D-RN", "RN", 
+            				 "MNB", "LSVM", "SVM", "LR", "RF"]
+            	for nt in not_tuned:
+            		clf_table = clf_table[clf_table.clf != nt]
+
             clf_table['score'] = clf_table.apply(lambda row: str(np.around(row.f1, decimals=3)) + r" (" + str(np.around(row.cv, decimals=3)) + r")", axis=1)
             clf_table = clf_table.drop(['f1', 'cv'], axis=1)
             clf_table.set_index("clf", inplace=True)
