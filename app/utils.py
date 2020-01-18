@@ -77,9 +77,10 @@ def remove_columnname_from_text(df: pd.DataFrame, column_name: str) -> pd.DataFr
 
 def split_texts_into_segments(corpus: pd.DataFrame,
 							  corpus_type: Optional[str] = "prose",
+							  max_segments: Optional[int] = 100,
 							  n: Optional[int] = 10000,
 							  same_len: Optional[bool] = False) -> pd.DataFrame:
-	""" Splits the texts of a corpus into n segments and returns them as a new corpus
+	""" Splits the texts of a corpus into segments with size n and returns them as a new corpus
 		(A number is added to the file name and title to distinguish them).
 		If same_len, segments with lengths smaller than n will be ignored.
 	"""
@@ -88,6 +89,7 @@ def split_texts_into_segments(corpus: pd.DataFrame,
 	if corpus_type == "prose":
 		for index, row in corpus.iterrows():
 			chunks = build_chunks(word_tokenize(row["text"]), n)
+			chunks = chunks[:max_segments]
 			for idx_chunk, chunk in enumerate(chunks):
 				
 				new_filename = row["filename"] + "_" + str(idx_chunk + 1)
@@ -141,7 +143,7 @@ def unify_texts_amount(df: pd.DataFrame,
 					   use_smallest_amount: Optional[bool] = False,
 					   columns: Optional[List[str]] = ["author", "text"]) -> pd.DataFrame:
 	""" Takes a DataFrame and unifies the amount of rows per label by an 'max_value' 
-		or optionally the label with the smallest amount within the DataFrame.
+		or optionally the label with the smallest amount within the DataFrame. 
 	"""
 	d = df[by_column].value_counts().to_dict()
 	if use_smallest_amount:
