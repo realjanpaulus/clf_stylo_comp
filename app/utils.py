@@ -167,6 +167,7 @@ def unify_texts_amount(df: pd.DataFrame,
 def document_term_matrix(corpus: pd.DataFrame,
 						 vectorization_method: str, 
 						 document_column: str,
+						 binary: Optional[bool] = False,
 						 lower: Optional[str] = True,
 						 max_features: Optional[int] = 2000,
 						 ngram_range: Optional[Tuple[int, int]] = (1,1),
@@ -175,11 +176,11 @@ def document_term_matrix(corpus: pd.DataFrame,
 	""" Computes a Document Term Matrix and a Matrix of token counts.
 	"""
 	if vectorization_method == "tfidf":
-		vectorizer = TfidfVectorizer(max_features=max_features, lowercase=lower)
+		vectorizer = TfidfVectorizer(max_features=max_features, lowercase=lower, binary=binary)
 	elif vectorization_method == "cos":	
-		vectorizer = TfidfVectorizer(max_features=max_features, lowercase=lower)
+		vectorizer = TfidfVectorizer(max_features=max_features, lowercase=lower, binary=binary)
 	else:
-		vectorizer = CountVectorizer(max_features=max_features, lowercase=lower)
+		vectorizer = CountVectorizer(max_features=max_features, lowercase=lower, binary=binary)
 	
 
 	vector = vectorizer.fit_transform(corpus[text_column])
@@ -213,8 +214,10 @@ def horizontal_hist(results: pd.DataFrame,
 					output_name: Optional[str] = "", 
 					save_date: Optional[bool] = False, 
 					vectorization_method: Optional[str] = ""):
-	
-	del results.index.name
+	try:
+		del results.index.name
+	except:
+		pass
 	results = results[["cv", "f1"]]
 	ax = results.plot.barh(color=["#a05195", "#003f5c"], 
 						   edgecolor="black")
@@ -255,7 +258,10 @@ def vertical_hist(results: pd.DataFrame,
 				  save_date: Optional[bool] = False,
 				  vectorization_method: Optional[str] = ""):
 	
-	del results.index.name
+	try:
+		del results.index.name
+	except:
+		pass
 	ax = results.plot.bar(color=["#003f5c","#a05195"], 
 						  edgecolor="black")
 	for p in ax.patches: 
