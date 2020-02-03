@@ -48,10 +48,50 @@ def main():
 		max_features = [200, 300, 500, 1000, 2000, 3000]
 		n_grams = [(1,1)]
 	elif args.experiment == 4:
-		logging.info("Starting experiment 3: different mfw for cosine.")
+		logging.info("Starting experiment 4: different mfw for cosine.")
 		vectorization_methods = ["cos"]
 		max_features = [200, 300, 500, 1000, 2000, 3000]
 		n_grams = [(1,1)]
+	elif args.experiment == 5:
+		logging.info("Starting experiment 5: different mfw and ngrams (2,2) for bow.")
+		vectorization_methods = ["bow"]
+		max_features = [200, 300, 500, 1000, 2000, 3000]
+		n_grams = [(2,2)]
+	elif args.experiment == 6:
+		logging.info("Starting experiment 6: different mfw and ngrams (2,2) for zscore.")
+		vectorization_methods = ["zscore"]
+		max_features = [200, 300, 500, 1000, 2000, 3000]
+		n_grams = [(2,2)]
+	elif args.experiment == 7:
+		logging.info("Starting experiment 7: different mfw and ngrams (2,2) for tfidf")
+		vectorization_methods = ["tfidf"]
+		max_features = [200, 300, 500, 1000, 2000, 3000]
+		n_grams = [(2,2)]
+	elif args.experiment == 8:
+		logging.info("Starting experiment 8: different mfw and ngrams (2,2) for cosine.")
+		vectorization_methods = ["cos"]
+		max_features = [200, 300, 500, 1000, 2000, 3000]
+		n_grams = [(2,2)]
+	elif args.experiment == 9:
+		logging.info("Starting experiment 9: different mfw and ngrams (3,3) for bow.")
+		vectorization_methods = ["bow"]
+		max_features = [200, 300, 500, 1000, 2000, 3000]
+		n_grams = [(3,3)]
+	elif args.experiment == 10:
+		logging.info("Starting experiment 10: different mfw and ngrams (3,3) for zscore.")
+		vectorization_methods = ["zscore"]
+		max_features = [200, 300, 500, 1000, 2000, 3000]
+		n_grams = [(3,3)]
+	elif args.experiment == 11:
+		logging.info("Starting experiment 11: different mfw and ngrams (3,3) for tfidf")
+		vectorization_methods = ["tfidf"]
+		max_features = [200, 300, 500, 1000, 2000, 3000]
+		n_grams = [(3,3)]
+	elif args.experiment == 12:
+		logging.info("Starting experiment 12: different mfw and ngrams (3,3) for cosine.")
+		vectorization_methods = ["cos"]
+		max_features = [200, 300, 500, 1000, 2000, 3000]
+		n_grams = [(3,3)]
 
 
 	cartesian_inputs = list(product(vectorization_methods, max_features, n_grams))

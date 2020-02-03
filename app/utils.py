@@ -524,34 +524,3 @@ def sum_table_to_df(sum_table: dict) -> pd.DataFrame:
     df = pd.DataFrame.from_dict(sum_table)
     return df.reindex(sorted(df.columns), axis=1)
 
-
-# ========================
-# keras helper functions #
-# ========================
-
-def plot_results(history):
-	loss = history.history["loss"]
-	val_loss = history.history["val_loss"]
-	epochs = range(1, len(loss) + 1)
-
-	plt.plot(epochs, loss, "b", label="Training loss")
-	plt.plot(epochs, val_loss, "ro", label="Validation loss")
-	plt.title("Training and validation loss")
-	plt.xlabel("Epochs")
-	plt.ylabel("Loss")
-	plt.legend()
-	plt.show()
-
-	plt.clf() #clears the figure
-
-	acc = history.history["acc"]
-	val_acc = history.history["val_acc"]
-
-	plt.plot(epochs, acc, "b", label="Training acc")
-	plt.plot(epochs, val_acc, "ro", label="Validation acc")
-	plt.title("Training and validation accuracy")
-	plt.xlabel("Epochs")
-	plt.ylabel("Acc")
-	plt.legend()
-
-	plt.show()

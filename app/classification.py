@@ -179,7 +179,7 @@ def main():
 			tknn_y_pred = tknn_model.predict(X_test)
 			tknn_f1_score = f1_score(y_test, tknn_y_pred, average="micro")
 			tknn_cross_val = np.mean(cross_val_score(tknn_clf, X_train, y_train, cv=cv, scoring="f1_micro"))
-			if args.vectorization_method == "zscore" or args.vectorization_method == "cos":
+			if args.vectorization_method == "zscore":
 				f1_dict["D-tKNN"].append(tknn_f1_score)
 				cv_dict["D-tKNN"].append(tknn_cross_val)
 				logging.debug(f"D-tKNN best params: {tknn_grid.best_params_}")
