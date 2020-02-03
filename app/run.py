@@ -92,9 +92,17 @@ def main():
 		vectorization_methods = ["cos"]
 		max_features = [200, 300, 500, 1000, 2000, 3000]
 		n_grams = [(3,3)]
-
+	elif args.experiment == 13:
+		if not args.extended:
+			logging.info("Experiment 13 can only be used with the extended classification. Classification will be switched automatically.")
+			args.extended = True
+		logging.info("Starting experiment 13: Advanced Burrows Delta (zcos).")
+		vectorization_methods = ["zcos", "z-score", "tfidf"]
+		max_features = [2000, 3000]
+		n_grams = [(1,1)]
 
 	cartesian_inputs = list(product(vectorization_methods, max_features, n_grams))
+
 	for idx, t in enumerate(cartesian_inputs):
 		
 		logging.info(f"Argument combination {idx+1}/{len(cartesian_inputs)}.")
@@ -102,7 +110,10 @@ def main():
 		logging.info(f"Max Features: {t[1]}.")
 		logging.info(f"N-grams: {t[2]}.")
 
-		command = f"python classification.py {args.path} -cr {args.classruns} -cn {args.corpus_name} -mf {t[1]} -ng {t[2][0]} {t[2][1]} -nj {args.n_jobs} -vm {t[0]}"
+		if args.extended:
+			command = f"python extended_classification.py {args.path} -cr {args.classruns} -cn {args.corpus_name} -mf {t[1]} -ng {t[2][0]} {t[2][1]} -nj {args.n_jobs} -vm {t[0]}"
+		else:
+			command = f"python classification.py {args.path} -cr {args.classruns} -cn {args.corpus_name} -mf {t[1]} -ng {t[2][0]} {t[2][1]} -nj {args.n_jobs} -vm {t[0]}"
 		
 		if args.use_tuning:
 			command += " -ut"
@@ -124,6 +135,7 @@ if __name__ == "__main__":
 	parser.add_argument("--classruns", "-cr", type=int, default=10, help="Sets the number of classification runs.")
 	parser.add_argument("--corpus_name", "-cn", type=str, nargs="?", default="prose", help="Indicates the name of the corpus for the output file.")
 	parser.add_argument("--experiment", "-e", type=int, default=1, help="Indicates the experiment number.")
+	parser.add_argument("--extended", "-ex", action="store_true", help="Indicates if the extended classification should be used.")
 	parser.add_argument("--n_jobs", "-nj", type=int, default=1, help="Indicates the number of processors used for computation.")
 	parser.add_argument("--save_date", "-sd", action="store_true", help="Indicates if the creation date of the results should be saved.")
 	parser.add_argument("--use_tuning", "-ut", action="store_true", help="Indicates if hyperparameter optimization should be used.")

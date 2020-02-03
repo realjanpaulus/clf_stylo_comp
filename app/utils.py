@@ -390,14 +390,12 @@ def visualize(results: pd.DataFrame,
 				output_name=output_name,
 				save_date=save_date)
 	else:
-
-		#TODO: erweitern
 		vectorization_methods = {"bow": "Bag of words",
 								 "cos": "Cosine similarity",
 								 "tfidf": "TF-IDF",
 								 "zscore": "Z-Score",
 								 "Bag of words": "Bag of words",
-								 "": ""}
+								 "zcos": "Z-Score + Cosine similarity"}
 		
 		if visualization_method == "bar_vertical":
 			vertical_hist(results, 
@@ -499,7 +497,7 @@ def summarize_tables(files: List[str],
     for idx, filename in enumerate(files):
         clf_name = filename[len(path):filename.find(".csv")-17]
         if vectorization_method in clf_name:
-            max_features = clf_name.split("_")[-2] #TODO: better solution?
+            max_features = clf_name.split("_")[-2]
             clf_table = pd.read_csv(filename)
             clf_table.columns = ["clf", "f1", "cv"]
 
