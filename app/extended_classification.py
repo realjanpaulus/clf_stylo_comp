@@ -123,7 +123,7 @@ def main():
 															stratify=corpus["author"],
 															shuffle=True)	
 		
-
+		"""
 		# =========================================================================== #
 		# K-Nearest Neighbors (+ z-scores = Burrows Delta)                            #
 		#					  (+ z-scores & cosine = Burrows Delta (Smiths-Version))  #						   #
@@ -301,7 +301,7 @@ def main():
 				tnsc_duration = float(time.time() - tnsc_st)
 				clf_durations["tNSC"].append(tnsc_duration)
 				logging.info(f"Run-time tNSC: {tnsc_duration} seconds")
-
+		"""
 
 		# ================================
 		# Linear Support Vector Machines #
@@ -351,7 +351,7 @@ def main():
 			clf_durations["tLSVM"].append(tlsvm_duration)
 			logging.info(f"Run-time tLSVM: {tlsvm_duration} seconds")
 
-		"""
+		
 		# ============== #
 		# Random Forests #
 		# ============== #
@@ -383,14 +383,14 @@ def main():
 							  "min_samples_leaf": [1, 2, 3, 4],
 							  "bootstrap": [True, False],
 							  "n_jobs": [n_jobs]}
-
+						  
 			# for representaion and computation in reasonable time
 			trf_parameters = {"n_estimators": [100, 200, 300, 400, 500],
 							  "max_depth": [10, 20, 30, 40],
 							  "min_samples_split": [2, 5, 10],
 							  "min_samples_leaf": [1, 2, 3, 4],
 							  "n_jobs": [n_jobs]}
-
+			
 			trf_grid = GridSearchCV(rf_clf, trf_parameters, cv=cv, scoring="f1_micro")
 			trf_grid.fit(X_train, y_train)
 
@@ -412,7 +412,7 @@ def main():
 
 		
 
-
+		"""
 		# =================================================
 		# Multinomial Naive Bayes (only without z-scores) #
 		# =================================================
@@ -459,55 +459,6 @@ def main():
 				clf_durations["tMNB"].append(tmnb_duration)
 				logging.info(f"Run-time tMNB: {tmnb_duration} seconds")
 
-		
-		
-		# ================================
-		# Linear Support Vector Machines #
-		# ================================
-		
-		lsvm_st = time.time()
-
-		lsvm_clf = LinearSVC()
-		lsvm_model = lsvm_clf.fit(X_train, y_train)
-		lsvm_y_pred = lsvm_model.predict(X_test)
-		lsvm_f1_score = f1_score(y_test, lsvm_y_pred, average="micro")
-		lsvm_cross_val = np.mean(cross_val_score(lsvm_clf, X_train, y_train, cv=cv, scoring="f1_micro"))
-		f1_dict["LSVM"].append(lsvm_f1_score)
-		cv_dict["LSVM"].append(lsvm_cross_val)
-
-		lsvm_duration = float(time.time() - lsvm_st)
-		clf_durations["LSVM"].append(lsvm_duration)
-		logging.info(f"Run-time LSVM: {lsvm_duration} seconds")
-		
-
-		# Hyperparameter optimization #
-		
-		if args.use_tuning:
-
-			tlsvm_st = time.time()
-
-			tlsvm_parameters = {"penalty": ["l2"],
-							   "loss": ["squared_hinge"],
-							   "C": [0.0001, 0.001, 0.01, 0.1, 1.0, 2.0, 3.0, 4.0, 5.0, 10.0],
-							   "max_iter": [1000, 1125, 1200, 1500, 2000]}
-			
-			# penalty = "l1" doesn't work with "squared_hinge" so it won't be used
-			# loss = "hinge" doesn't work with "l2" so it won't be used
-			tlsvm_grid = GridSearchCV(lsvm_clf, tlsvm_parameters, cv=cv, scoring="f1_micro")
-			tlsvm_grid.fit(X_train, y_train)
-
-			tlsvm_clf = LinearSVC(**tlsvm_grid.best_params_)
-			tlsvm_model = tlsvm_clf.fit(X_train, y_train)
-			tlsvm_y_pred = tlsvm_model.predict(X_test)
-			tlsvm_f1_score = f1_score(y_test, tlsvm_y_pred, average="micro")
-			tlsvm_cross_val = np.mean(cross_val_score(tlsvm_clf, X_train, y_train, cv=cv, scoring="f1_micro"))
-			f1_dict["tLSVM"].append(tlsvm_f1_score)
-			cv_dict["tLSVM"].append(tlsvm_cross_val)
-			logging.debug(f"tLSVM best params: {tlsvm_grid.best_params_}")
-
-			tlsvm_duration = float(time.time() - tlsvm_st)
-			clf_durations["tLSVM"].append(tlsvm_duration)
-			logging.info(f"Run-time tLSVM: {tlsvm_duration} seconds")
 		
 		# =====================
 		# Logistic Regression #

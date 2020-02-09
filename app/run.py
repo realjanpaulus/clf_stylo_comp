@@ -97,7 +97,15 @@ def main():
 			logging.info("Experiment 13 can only be used with the extended classification. Classification will be switched automatically.")
 			args.extended = True
 		logging.info("Starting experiment 13: Advanced Burrows Delta (zcos).")
-		vectorization_methods = ["zcos", "z-score", "tfidf"]
+		vectorization_methods = ["zcos", "zscore", "tfidf"]
+		max_features = [2000, 3000, 4000, 5000]
+		n_grams = [(1,1)]
+	elif args.experiment == 14:
+		if not args.extended:
+			logging.info("Experiment 14 can only be used with the extended classification. Classification will be switched automatically.")
+			args.extended = True
+		logging.info("Starting experiment 14: Random Forests with zcos.")
+		vectorization_methods = ["zcos", "zscore", "tfidf"]
 		max_features = [2000, 3000]
 		n_grams = [(1,1)]
 

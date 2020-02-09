@@ -502,7 +502,7 @@ def summarize_tables(files: List[str],
             clf_table.columns = ["clf", "f1", "cv"]
 
             if drop_not_tuned:
-            	not_tuned = ["KNN", "D-KNN", "NSC", "D-NSC", "D-RN", "RN", 
+            	not_tuned = ["KNN", "D-KNN", "SD-KNN", "NSC", "D-NSC", "SD-NSC", "D-RN", "RN", 
             				 "MNB", "LSVM", "SVM", "LR", "RF"]
             	for nt in not_tuned:
             		clf_table = clf_table[clf_table.clf != nt]
