@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from collections import defaultdict
 from datetime import datetime
 import glob
 import io
@@ -23,7 +24,7 @@ from typing import Dict, List, Optional, Tuple, Union
 # experiment helper functions
 # visualization helper functions
 # analysis helper functions
-# keras helper functions
+# final analysis helper functions
 
 # ======================
 # adjustable parameter #
@@ -510,15 +511,84 @@ def summarize_tables(files: List[str],
             clf_table['score'] = clf_table.apply(lambda row: str(np.around(row.f1, decimals=3)) + r" (" + str(np.around(row.cv, decimals=3)) + r")", axis=1)
             clf_table = clf_table.drop(['f1', 'cv'], axis=1)
             clf_table.set_index("clf", inplace=True)
+
             tmp_dict = clf_table.to_dict("index")
             clf_dict = {}
             for k, v in tmp_dict.items():
                 clf_dict[k] = tmp_dict[k]["score"]
             sum_dict[int(max_features)] = clf_dict
-            
+
     return sum_dict
 
 def sum_table_to_df(sum_table: dict) -> pd.DataFrame:
     df = pd.DataFrame.from_dict(sum_table)
     return df.reindex(sorted(df.columns), axis=1)
 
+
+# =================================
+# final analysis helper functions #
+# =================================
+
+def all_corpus_tables_to_dict(tables: List[str],
+							  path: str,
+                              vectorization_method: str,
+                              max_feature: int,
+                              drop_not_tuned: Optional[bool] = False) -> dict:
+    
+    sum_dict = {}
+    
+    for idx, filename in enumerate(tables):
+        clf_name = filename[len(path):filename.find(".csv")-17]
+        if vectorization_method in clf_name:
+            max_features = clf_name.split("_")[-2]
+            if int(max_features) == max_feature:
+                clf_table = pd.read_csv(filename)
+                clf_table.columns = ["clf", "f1", "cv"]
+                
+                if drop_not_tuned:
+                    not_tuned = ["KNN", "D-KNN", "SD-KNN", "NSC", "D-NSC", "SD-NSC", "D-RN", "RN", 
+                                 "MNB", "LSVM", "SVM", "LR", "RF"]
+                    for nt in not_tuned:
+                        clf_table = clf_table[clf_table.clf != nt]
+                
+                clf_table.set_index("clf", inplace=True)
+                tmp_dict = clf_table.to_dict("index")                
+                sum_dict[filename] = tmp_dict
+                
+    return sum_dict
+
+
+def summarize_all_corpus_tables(path: str,
+                                vectorization_method: str,
+                                max_feature: int,
+                                drop_not_tuned: Optional[bool] = False) -> dict:
+    
+    sum_dict = defaultdict(lambda: defaultdict(list))
+    
+    tables = glob.glob(path + "/*.csv")
+    vect_table = [filename for filename in tables if vectorization_method in filename]
+    d = all_corpus_tables_to_dict(vect_table, 
+    							  path,
+                                  vectorization_method, 
+                                  max_feature,
+                                  drop_not_tuned = True)
+    
+
+    # save all f1- and cv-f1-scores in one dict with the respective clf-name
+    for filename, dic in d.items():
+        for k, v in dic.items():
+            if k not in sum_dict:
+                sum_dict[k] = {"f1": [dic[k]["f1"]], "cv": [dic[k]["cv"]]}
+            else:
+                sum_dict[k]["f1"].append(dic[k]["f1"])
+                sum_dict[k]["cv"].append(dic[k]["cv"])
+    
+    # compute mean
+    mean_sum_dict = {}
+    for clf, scores in sum_dict.items():
+        mean_sum_dict[clf] = {"f1": np.around(np.mean(scores["f1"]), decimals=3), 
+                              "cv": np.around(np.mean(scores["cv"]), decimals=3)}
+        
+    
+    df = pd.DataFrame.from_dict(dict(mean_sum_dict)).T
+    return df
