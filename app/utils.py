@@ -472,6 +472,7 @@ def df_to_latex(df, alignment="c"):
     for i in range(numRows):
         output.write("\\textbf{%s} & %s\\\\\n"
                      % (df.index[i], " & ".join([str(val) for val in df.iloc[i]])))
+
     #Write footer
     output.write("\\end{tabular}")
     return output.getvalue()
@@ -592,3 +593,4 @@ def summarize_all_corpus_tables(path: str,
     
     df = pd.DataFrame.from_dict(dict(mean_sum_dict)).T
     return df
+    

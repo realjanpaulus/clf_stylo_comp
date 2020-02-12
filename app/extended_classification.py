@@ -408,109 +408,6 @@ def main():
 			clf_durations["tRF"].append(trf_duration)
 			logging.info(f"Run-time tRF: {trf_duration} seconds")
 
-
-
-		
-
-		"""
-		# =================================================
-		# Multinomial Naive Bayes (only without z-scores) #
-		# =================================================
-		
-		if args.vectorization_method != "zscore":
-
-			mnb_st = time.time()
-
-			mnb_clf = MultinomialNB()
-			mnb_model = mnb_clf.fit(X_train, y_train)
-			mnb_y_pred = mnb_model.predict(X_test)
-			mnb_f1_score = f1_score(y_test, mnb_y_pred, average="micro")
-			mnb_cross_val = np.mean(cross_val_score(mnb_clf, X_train, y_train, cv=cv, scoring="f1_micro"))
-			f1_dict["MNB"].append(mnb_f1_score)
-			cv_dict["MNB"].append(mnb_cross_val)
-
-			mnb_duration = float(time.time() - mnb_st)
-			clf_durations["MNB"].append(mnb_duration)
-			logging.info(f"Run-time MNB: {mnb_duration} seconds")
-		
-			# Hyperparameter optimization #
-
-			if args.use_tuning:
-
-				tmnb_st = time.time()
-
-				tmnb_parameters = {"alpha": [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05,
-											 0.1, 0.5, 1.0, 2.0, 3.0],
-								   "fit_prior": [True, False]}
-
-				tmnb_grid = GridSearchCV(mnb_clf, tmnb_parameters, cv=cv, scoring="f1_micro")
-				tmnb_grid.fit(X_train, y_train)
-
-				tmnb_clf = MultinomialNB(**tmnb_grid.best_params_)
-				tmnb_model = tmnb_clf.fit(X_train, y_train)
-				tmnb_y_pred = tmnb_model.predict(X_test)
-				tmnb_f1_score = f1_score(y_test, tmnb_y_pred, average="micro")
-				tmnb_cross_val = np.mean(cross_val_score(tmnb_clf, X_train, y_train, cv=cv, scoring="f1_micro"))
-				f1_dict["tMNB"].append(tmnb_f1_score)
-				cv_dict["tMNB"].append(tmnb_cross_val)
-				logging.debug(f"tMNB best params: {tmnb_grid.best_params_}")
-
-				tmnb_duration = float(time.time() - tmnb_st)
-				clf_durations["tMNB"].append(tmnb_duration)
-				logging.info(f"Run-time tMNB: {tmnb_duration} seconds")
-
-		
-		# =====================
-		# Logistic Regression #
-		# =====================
-		
-		lr_st = time.time()
-
-		# every solver except "liblinear" had problems with the convergence
-		lr_clf = LogisticRegression(multi_class="ovr", solver="liblinear")
-		lr_model = lr_clf.fit(X_train, y_train)
-		lr_y_pred = lr_model.predict(X_test)
-		lr_f1_score = f1_score(y_test, lr_y_pred, average="micro")
-		lr_cross_val = np.mean(cross_val_score(lr_clf, X_train, y_train, cv=cv))
-		f1_dict["LR"].append(lr_f1_score)
-		cv_dict["LR"].append(lr_cross_val)
-
-		lr_duration = float(time.time() - lr_st)
-		clf_durations["LR"].append(lr_duration)
-		logging.info(f"Run-time LR: {lr_duration} seconds")
-
-		# Hyperparameter optimization #
-		
-		if args.use_tuning:
-
-			tlr_st = time.time()
-
-			tlr_parameters = {"penalty": ["l1"],
-							  "tol": [0.0001, 0.001, 0.01, 0.1],
-							  "C": [0.0001, 0.001, 0.01, 0.1, 1.0, 2.0, 3.0, 4.0, 5.0, 10.0],
-							  "solver": ["liblinear"],
-							  "max_iter": [1000, 2000, 3000, 4000, 5000, 6000],
-							  "multi_class": ["ovr"],
-							  "n_jobs": [n_jobs]}
-
-			# solver only "saga" because its good for large datasets and it supports elasticnet-penalty
-			tlr_grid = GridSearchCV(lr_clf, tlr_parameters, cv=cv, scoring="f1_micro")
-			tlr_grid.fit(X_train, y_train)
-
-			tlr_clf = LogisticRegression(**tlr_grid.best_params_)
-			tlr_model = tlr_clf.fit(X_train, y_train)
-			tlr_y_pred = tlr_model.predict(X_test)
-			tlr_f1_score = f1_score(y_test, tlr_y_pred, average="micro")
-			tlr_cross_val = np.mean(cross_val_score(tlr_clf, X_train, y_train, cv=cv))
-			f1_dict["tLR"].append(tlr_f1_score)
-			cv_dict["tLR"].append(tlr_cross_val)
-			logging.debug(f"tLR best params: {tlr_grid.best_params_}")
-
-			tlr_duration = float(time.time() - tlr_st)
-			clf_durations["tLR"].append(tlr_duration)
-			logging.info(f"Run-time tLR: {tlr_duration} seconds")
-		
-		"""
 	
 	# ================
 	# Saving results #
@@ -595,3 +492,4 @@ if __name__ == "__main__":
 	args = parser.parse_args()
 
 	main()
+	

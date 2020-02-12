@@ -22,7 +22,7 @@ def main():
 	results = pd.read_csv(args.path, index_col=0)
 	logging.info("Plotting graph.")
 
-	#TODO: überprüfen, auch max_features
+
 	if args.clf_visualization:
 		results.set_index("clf", inplace=True)
 		visualize(results, 
